@@ -1,0 +1,51 @@
+syntax = "proto3"
+
+package fileprocessing_v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1;file_processing_v1";
+
+
+service FileProcessingService {
+  rpc UploadCSVFile(UploadCSVFileRequest) returns (UploadCSVResponse);
+  rpc GetFileMetadata(GetFileRequest) returns (FileMetadataResponse);
+  rpc UpdateCSVFile(UpdateCSVFileRequest) returns (UploadCSVResponse);
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+}
+
+message UploadCSVFileRequest {
+  string file_name = 1;  
+  bytes content = 2;    
+}
+
+message UploadCSVResponse {
+  int64 file_id = 1;   
+  string message = 2; 
+}
+
+message GetFileRequest {
+  int64 file_id = 1;
+}
+
+message FileMetadataResponse {
+  int64 file_id = 1;
+  string file_name = 2;
+  string file_path = 3;
+  google.protobuf.Timestamp uploaded_at = 4; 
+}
+
+message UpdateCSVFileRequest {
+  int64 file_id = 1;
+  string file_name = 2;
+  bytes new_content = 3;
+}
+
+message DeleteFileRequest {
+  int64 file_id = 1;
+}
+
+message DeleteFileResponse {
+  bool success = 1;
+  string message = 2;
+}
