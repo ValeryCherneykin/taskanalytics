@@ -31,12 +31,13 @@ message GetFileRequest {
 }
 
 message FileMetadataResponse {
-  string file_id = 1;
-  string file_name = 2;
-  string file_path = 3;
-  google.protobuf.Timestamp uploaded_at = 4;
-  string status = 5;
-  int64 record_count = 6; 
+    string file_id = 1;
+    string file_name = 2;
+    string file_path = 3;
+    google.protobuf.Timestamp uploaded_at = 4;
+    string status = 5;
+    int64 record_count = 6;
+    int64 size = 7;
 }
 
 message UpdateCSVFileRequest {
@@ -64,10 +65,11 @@ message ListFilesResponse {
 }
 
 message FileMetadata {
-  string file_id = 1;
-  string file_name = 2;
-  string file_path = 3;
-  google.protobuf.Timestamp uploaded_at = 4;
-  string status = 5;
-  int64 record_count = 6;
+    string file_id = 1;
+    string file_name = 2;
+    string file_path = 3;
+    google.protobuf.Timestamp uploaded_at = 4;
+    string status = 5;
+    int64 record_count = 6;
+    int64 size = 7;
 }
