@@ -22,10 +22,11 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FileProcessingServiceClient interface {
-	UploadCSVFile(ctx context.Context, in *UploadCSVFileRequest, opts ...grpc.CallOption) (*UploadCSVResponse, error)
+	UploadCSVFile(ctx context.Context, opts ...grpc.CallOption) (FileProcessingService_UploadCSVFileClient, error)
 	GetFileMetadata(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*FileMetadataResponse, error)
 	UpdateCSVFile(ctx context.Context, in *UpdateCSVFileRequest, opts ...grpc.CallOption) (*UploadCSVResponse, error)
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
+	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
 }
 
 type fileProcessingServiceClient struct {
@@ -36,13 +37,38 @@ func NewFileProcessingServiceClient(cc grpc.ClientConnInterface) FileProcessingS
 	return &fileProcessingServiceClient{cc}
 }
 
-func (c *fileProcessingServiceClient) UploadCSVFile(ctx context.Context, in *UploadCSVFileRequest, opts ...grpc.CallOption) (*UploadCSVResponse, error) {
-	out := new(UploadCSVResponse)
-	err := c.cc.Invoke(ctx, "/fileprocessing_v1.FileProcessingService/UploadCSVFile", in, out, opts...)
+func (c *fileProcessingServiceClient) UploadCSVFile(ctx context.Context, opts ...grpc.CallOption) (FileProcessingService_UploadCSVFileClient, error) {
+	stream, err := c.cc.NewStream(ctx, &FileProcessingService_ServiceDesc.Streams[0], "/fileprocessing_v1.FileProcessingService/UploadCSVFile", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &fileProcessingServiceUploadCSVFileClient{stream}
+	return x, nil
+}
+
+type FileProcessingService_UploadCSVFileClient interface {
+	Send(*UploadCSVFileRequest) error
+	CloseAndRecv() (*UploadCSVResponse, error)
+	grpc.ClientStream
+}
+
+type fileProcessingServiceUploadCSVFileClient struct {
+	grpc.ClientStream
+}
+
+func (x *fileProcessingServiceUploadCSVFileClient) Send(m *UploadCSVFileRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *fileProcessingServiceUploadCSVFileClient) CloseAndRecv() (*UploadCSVResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(UploadCSVResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *fileProcessingServiceClient) GetFileMetadata(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*FileMetadataResponse, error) {
@@ -72,14 +98,24 @@ func (c *fileProcessingServiceClient) DeleteFile(ctx context.Context, in *Delete
 	return out, nil
 }
 
+func (c *fileProcessingServiceClient) ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error) {
+	out := new(ListFilesResponse)
+	err := c.cc.Invoke(ctx, "/fileprocessing_v1.FileProcessingService/ListFiles", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FileProcessingServiceServer is the server API for FileProcessingService service.
 // All implementations must embed UnimplementedFileProcessingServiceServer
 // for forward compatibility
 type FileProcessingServiceServer interface {
-	UploadCSVFile(context.Context, *UploadCSVFileRequest) (*UploadCSVResponse, error)
+	UploadCSVFile(FileProcessingService_UploadCSVFileServer) error
 	GetFileMetadata(context.Context, *GetFileRequest) (*FileMetadataResponse, error)
 	UpdateCSVFile(context.Context, *UpdateCSVFileRequest) (*UploadCSVResponse, error)
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
+	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
 	mustEmbedUnimplementedFileProcessingServiceServer()
 }
 
@@ -87,8 +123,8 @@ type FileProcessingServiceServer interface {
 type UnimplementedFileProcessingServiceServer struct {
 }
 
-func (UnimplementedFileProcessingServiceServer) UploadCSVFile(context.Context, *UploadCSVFileRequest) (*UploadCSVResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadCSVFile not implemented")
+func (UnimplementedFileProcessingServiceServer) UploadCSVFile(FileProcessingService_UploadCSVFileServer) error {
+	return status.Errorf(codes.Unimplemented, "method UploadCSVFile not implemented")
 }
 func (UnimplementedFileProcessingServiceServer) GetFileMetadata(context.Context, *GetFileRequest) (*FileMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFileMetadata not implemented")
@@ -98,6 +134,9 @@ func (UnimplementedFileProcessingServiceServer) UpdateCSVFile(context.Context, *
 }
 func (UnimplementedFileProcessingServiceServer) DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFile not implemented")
+}
+func (UnimplementedFileProcessingServiceServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListFiles not implemented")
 }
 func (UnimplementedFileProcessingServiceServer) mustEmbedUnimplementedFileProcessingServiceServer() {}
 
@@ -112,22 +151,30 @@ func RegisterFileProcessingServiceServer(s grpc.ServiceRegistrar, srv FileProces
 	s.RegisterService(&FileProcessingService_ServiceDesc, srv)
 }
 
-func _FileProcessingService_UploadCSVFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadCSVFileRequest)
-	if err := dec(in); err != nil {
+func _FileProcessingService_UploadCSVFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(FileProcessingServiceServer).UploadCSVFile(&fileProcessingServiceUploadCSVFileServer{stream})
+}
+
+type FileProcessingService_UploadCSVFileServer interface {
+	SendAndClose(*UploadCSVResponse) error
+	Recv() (*UploadCSVFileRequest, error)
+	grpc.ServerStream
+}
+
+type fileProcessingServiceUploadCSVFileServer struct {
+	grpc.ServerStream
+}
+
+func (x *fileProcessingServiceUploadCSVFileServer) SendAndClose(m *UploadCSVResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *fileProcessingServiceUploadCSVFileServer) Recv() (*UploadCSVFileRequest, error) {
+	m := new(UploadCSVFileRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(FileProcessingServiceServer).UploadCSVFile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/fileprocessing_v1.FileProcessingService/UploadCSVFile",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileProcessingServiceServer).UploadCSVFile(ctx, req.(*UploadCSVFileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 func _FileProcessingService_GetFileMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -184,6 +231,24 @@ func _FileProcessingService_DeleteFile_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FileProcessingService_ListFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListFilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileProcessingServiceServer).ListFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/fileprocessing_v1.FileProcessingService/ListFiles",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileProcessingServiceServer).ListFiles(ctx, req.(*ListFilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FileProcessingService_ServiceDesc is the grpc.ServiceDesc for FileProcessingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -191,10 +256,6 @@ var FileProcessingService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "fileprocessing_v1.FileProcessingService",
 	HandlerType: (*FileProcessingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "UploadCSVFile",
-			Handler:    _FileProcessingService_UploadCSVFile_Handler,
-		},
 		{
 			MethodName: "GetFileMetadata",
 			Handler:    _FileProcessingService_GetFileMetadata_Handler,
@@ -207,7 +268,17 @@ var FileProcessingService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "DeleteFile",
 			Handler:    _FileProcessingService_DeleteFile_Handler,
 		},
+		{
+			MethodName: "ListFiles",
+			Handler:    _FileProcessingService_ListFiles_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UploadCSVFile",
+			Handler:       _FileProcessingService_UploadCSVFile_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "file_processing.proto",
 }
