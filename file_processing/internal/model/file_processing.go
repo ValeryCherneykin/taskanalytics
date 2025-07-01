@@ -1,25 +1,21 @@
 package model
 
-import (
-	"time"
-
-	"gorm.io/gorm"
-)
+import "time"
 
 type UploadedFile struct {
-	FileID    string    `gorm:"type:text;primaryKey"`
-	FileName  string    `gorm:"type:text;not null"`
-	FilePath  string    `gorm:"type:text;not null;unique"`
-	Size      int64     `gorm:"not null"`
-	Status    string    `gorm:"type:text;not null;check:status IN ('pending','completed','failed')"`
-	CreatedAt time.Time `gorm:"not null"`
+	FileID    string
+	FileName  string
+	FilePath  string
+	Size      int64
+	Status    string
+	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt
+	DeletedAt *time.Time
 }
 
 type FileRecord struct {
-	ID        uint      `gorm:"primaryKey"`
-	FileID    string    `gorm:"type:text;index;not null"`
-	Data      string    `gorm:"type:text;not null"`
-	CreatedAt time.Time `gorm:"not null"`
+	ID        uint
+	FileID    string
+	Data      string
+	CreatedAt time.Time
 }
