@@ -14,9 +14,17 @@ type Client interface {
 	Close() error
 }
 
+type TxManager interface {
+	ReadCommitted(ctx context.Context, f Handler) error
+}
+
 type Query struct {
 	Name     string
-	QueryRow string
+	QueryRaw string
+}
+
+type Transactor interface {
+	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
 }
 
 type SQLExecer interface {
@@ -40,7 +48,8 @@ type Pinger interface {
 }
 
 type DB interface {
-	Pinger
 	SQLExecer
-	Close() error
+	Transactor
+	Pinger
+	Close()
 }
