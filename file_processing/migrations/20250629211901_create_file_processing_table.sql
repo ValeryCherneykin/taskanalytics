@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS uploaded_files (
-    file_id TEXT PRIMARY KEY,
+    file_id BIGSERIAL PRIMARY KEY,
     file_name TEXT NOT NULL,
     file_path TEXT NOT NULL UNIQUE,
     size BIGINT NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
 );
 
 CREATE TABLE IF NOT EXISTS file_records (
-    id SERIAL PRIMARY KEY,
-    file_id TEXT NOT NULL REFERENCES uploaded_files(file_id),
+    id BIGSERIAL PRIMARY KEY,
+    file_id BIGINT NOT NULL REFERENCES uploaded_files(file_id)
     data TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
