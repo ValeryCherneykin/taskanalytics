@@ -7,6 +7,6 @@ import (
 )
 
 type UploadedFileRepository interface {
-	Create(ctx context.Context, info model.UploadedFile) (string, error)
-	// Get(ctx context.Context, id string) (model.UploadedFile, error)
+	Create(ctx context.Context, info model.UploadedFile) (int64, error)
+	Get(ctx context.Context, id string) (model.UploadedFile, error)
 }
