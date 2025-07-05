@@ -124,8 +124,11 @@ func (r *repo) Update(ctx context.Context, file *model.UploadedFile) error {
 	return err
 }
 
-func (r *repo) List(ctx context.Context, limit, offset uint64) ([]model.UploadedFile, error) {
-	builder := sq.Select(idColumn, fileNameColumn, filePathColumn, sizeColumn, statusColumn, createdAtColumn, updatedAtColumn, deletedAtColumn).
+func (r *repo) List(ctx context.Context, limit, offset uint64) ([]*model.UploadedFile, error) {
+	builder := sq.Select(
+		idColumn, fileNameColumn, filePathColumn, sizeColumn,
+		statusColumn, createdAtColumn, updatedAtColumn, deletedAtColumn,
+	).
 		From(tableName).
 		PlaceholderFormat(sq.Dollar).
 		OrderBy(createdAtColumn + " DESC").
@@ -148,13 +151,17 @@ func (r *repo) List(ctx context.Context, limit, offset uint64) ([]model.Uploaded
 	}
 	defer rows.Close()
 
-	var files []model.UploadedFile
+	var files []*model.UploadedFile
 	for rows.Next() {
 		var file modelRepo.UploadedFile
-		if err := rows.Scan(&file.FileID, &file.FileName, &file.FilePath, &file.Size, &file.Status, &file.CreatedAt, &file.UpdatedAt, &file.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&file.FileID, &file.FileName, &file.FilePath,
+			&file.Size, &file.Status, &file.CreatedAt,
+			&file.UpdatedAt, &file.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
-		files = append(files, *converter.ToFileMetadataFromRepo(&file))
+		files = append(files, converter.ToFileMetadataFromRepo(&file))
 	}
 
 	return files, nil
