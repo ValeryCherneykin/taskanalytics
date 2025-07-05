@@ -14,7 +14,7 @@ import (
 func TestToFileMetadata(t *testing.T) {
 	now := time.Now()
 	file := model.UploadedFile{
-		FileID:    "abc-123",
+		FileID:    1,
 		FileName:  "data.csv",
 		FilePath:  "/files/data.csv",
 		Size:      1024,
@@ -23,7 +23,7 @@ func TestToFileMetadata(t *testing.T) {
 	}
 
 	expected := &desc.FileMetadata{
-		FileId:      "abc-123",
+		FileId:      1,
 		FileName:    "data.csv",
 		FilePath:    "/files/data.csv",
 		Size:        1024,

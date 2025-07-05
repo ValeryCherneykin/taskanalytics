@@ -3,9 +3,12 @@ package fileprocessing
 import (
 	"context"
 
-	"github.com/Masterminds/squirrel"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db"
-	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/repository/file_processing/model"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/model"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/repository"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/repository/file_processing/converter"
+	modelRepo "github.com/ValeryCherneykin/taskanalytics/file_processing/internal/repository/file_processing/model"
 )
 
 const (
@@ -25,18 +28,18 @@ type repo struct {
 	db db.Client
 }
 
-// func NewRepository(db db.Client) repository.UploadedFileRepository {
-// 	return &repo{
-// 		db: db,
-// 	}
-// }
+func NewRepository(db db.Client) repository.UploadedFileRepository {
+	return &repo{
+		db: db,
+	}
+}
 
-func (r *repo) Create(ctx context.Context, info model.UploadedFile) (int64, error) {
-	builder := squirrel.Insert(tableName).
-		PlaceholderFormat(squirrel.Dollar).
-		Columns(fileNameColumn, filePathColumn).
-		Values(info.FileName, info.FilePath).
-		Suffix("RETURNING file_id")
+func (r *repo) Create(ctx context.Context, file model.UploadedFile) (int64, error) {
+	builder := sq.Insert(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Columns(fileNameColumn, filePathColumn, sizeColumn, statusColumn).
+		Values(file.FileName, file.FilePath, file.Size, file.Status).
+		Suffix("RETURNING ID")
 
 	query, args, err := builder.ToSql()
 	if err != nil {
@@ -44,7 +47,7 @@ func (r *repo) Create(ctx context.Context, info model.UploadedFile) (int64, erro
 	}
 
 	q := db.Query{
-		Name:     "file_processing_repository.Create",
+		Name:     "file_processing.Create",
 		QueryRaw: query,
 	}
 
@@ -58,13 +61,10 @@ func (r *repo) Create(ctx context.Context, info model.UploadedFile) (int64, erro
 }
 
 func (r *repo) Get(ctx context.Context, id int64) (*model.UploadedFile, error) {
-	builder := squirrel.Select(
-		idColumn, fileNameColumn, filePathColumn, sizeColumn,
-		statusColumn, createdAtColumn, updatedAtColumn, deletedAtColumn,
-	).
-		PlaceholderFormat(squirrel.Dollar).
+	builder := sq.Select(idColumn, fileNameColumn, filePathColumn, sizeColumn, statusColumn, createdAtColumn, updatedAtColumn, deletedAtColumn).
 		From(tableName).
-		Where(squirrel.Eq{idColumn: id}).
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{idColumn: id}).
 		Limit(1)
 
 	query, args, err := builder.ToSql()
@@ -73,62 +73,12 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.UploadedFile, error) {
 	}
 
 	q := db.Query{
-		Name:     "file_processing_repository.Get",
+		Name:     "file_processing.Get",
 		QueryRaw: query,
 	}
 
-	var file model.UploadedFile
-	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(
-		&file.FileID, &file.FileName, &file.FilePath,
-		&file.Size, &file.Status, &file.CreatedAt,
-		&file.UpdatedAt, &file.DeletedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
+	var file modelRepo.UploadedFile
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&file.FileID, &file.FileName, &file.FilePath, &file.Size, &file.Status, &file.CreatedAt, &file.UpdatedAt, &file.DeletedAt)
 
-	return &file, nil
-}
-
-func (r *repo) List(ctx context.Context, limit, offset int) ([]model.UploadedFile, error) {
-	builder := squirrel.Select(
-		idColumn, fileNameColumn, filePathColumn, sizeColumn,
-		statusColumn, createdAtColumn, updatedAtColumn, deletedAtColumn,
-	).
-		PlaceholderFormat(squirrel.Dollar).
-		From(tableName).
-		OrderBy(createdAtColumn + " DESC").
-		Limit(uint64(limit)).
-		Offset(uint64(offset))
-
-	query, args, err := builder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	q := db.Query{
-		Name:     "file_processing_repository.List",
-		QueryRaw: query,
-	}
-
-	rows, err := r.db.DB().QueryContext(ctx, q, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var files []model.UploadedFile
-	for rows.Next() {
-		var file model.UploadedFile
-		if err := rows.Scan(
-			&file.FileID, &file.FileName, &file.FilePath,
-			&file.Size, &file.Status, &file.CreatedAt,
-			&file.UpdatedAt, &file.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		files = append(files, file)
-	}
-
-	return files, nil
+	return converter.ToFileMetadataFromRepo(&file), err
 }

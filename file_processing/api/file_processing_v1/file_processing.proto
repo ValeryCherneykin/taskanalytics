@@ -65,7 +65,7 @@ message ListFilesResponse {
 }
 
 message FileMetadata {
-    string file_id = 1;
+    int64 file_id = 1;
     string file_name = 2;
     string file_path = 3;
     google.protobuf.Timestamp uploaded_at = 4;
