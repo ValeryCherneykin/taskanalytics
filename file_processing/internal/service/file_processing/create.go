@@ -11,7 +11,7 @@ func (s *serv) Create(ctx context.Context, file *model.UploadedFile) (int64, err
 
 	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
 		var errTx error
-		id, errTx = s.Create(ctx, file)
+		id, errTx = s.fileProcessingRepository.Create(ctx, file)
 		if errTx != nil {
 			return errTx
 		}

@@ -34,7 +34,7 @@ func NewRepository(db db.Client) repository.UploadedFileRepository {
 	}
 }
 
-func (r *repo) Create(ctx context.Context, file model.UploadedFile) (int64, error) {
+func (r *repo) Create(ctx context.Context, file *model.UploadedFile) (int64, error) {
 	builder := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(fileNameColumn, filePathColumn, sizeColumn, statusColumn).
@@ -86,8 +86,7 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.UploadedFile, error) {
 func (r *repo) Delete(ctx context.Context, id int64) error {
 	builder := sq.Delete(tableName).
 		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{idColumn: id}).
-		Suffix("DELETE")
+		Where(sq.Eq{idColumn: id})
 
 	query, args, err := builder.ToSql()
 	if err != nil {
