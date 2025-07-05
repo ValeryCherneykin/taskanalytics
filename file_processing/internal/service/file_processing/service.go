@@ -6,13 +6,16 @@ import (
 )
 
 type serv struct {
-	fileProcessingRepo repository.UploadedFileRepository
-	txManager          db.TxManager
+	fileProcessingRepository repository.UploadedFileRepository
+	txManager                db.TxManager
 }
 
-func NewService(fileProcessingRepo repository.UploadedFileRepository, txManager db.TxManager) *serv {
+func NewService(
+	fileProcessingRepository repository.UploadedFileRepository,
+	txManager db.TxManager,
+) *serv {
 	return &serv{
-		fileProcessingRepo: fileProcessingRepo,
-		txManager:          txManager,
+		fileProcessingRepository: fileProcessingRepository,
+		txManager:                txManager,
 	}
 }
