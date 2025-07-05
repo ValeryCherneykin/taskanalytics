@@ -82,3 +82,81 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.UploadedFile, error) {
 
 	return converter.ToFileMetadataFromRepo(&file), err
 }
+
+func (r *repo) Delete(ctx context.Context, id int64) error {
+	builder := sq.Delete(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{idColumn: id}).
+		Suffix("DELETE")
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	q := db.Query{
+		Name:     "file_processing.Delete",
+		QueryRaw: query,
+	}
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
+	return err
+}
+
+func (r *repo) Update(ctx context.Context, file model.UploadedFile) error {
+	builder := sq.Update(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Set(fileNameColumn, file.FileName).
+		Set(filePathColumn, file.FilePath).
+		Set(sizeColumn, file.Size).
+		Set(statusColumn, file.Status).
+		Where(sq.Eq{idColumn: file.FileID})
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	q := db.Query{
+		Name:     "file_processing.Update",
+		QueryRaw: query,
+	}
+
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
+	return err
+}
+
+func (r *repo) List(ctx context.Context, limit, offset uint64) ([]model.UploadedFile, error) {
+	builder := sq.Select(idColumn, fileNameColumn, filePathColumn, sizeColumn, statusColumn, createdAtColumn, updatedAtColumn, deletedAtColumn).
+		From(tableName).
+		PlaceholderFormat(sq.Dollar).
+		OrderBy(createdAtColumn + " DESC").
+		Limit(limit).
+		Offset(offset)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	q := db.Query{
+		Name:     "file_processing.List",
+		QueryRaw: query,
+	}
+
+	rows, err := r.db.DB().QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var files []model.UploadedFile
+	for rows.Next() {
+		var file modelRepo.UploadedFile
+		if err := rows.Scan(&file.FileID, &file.FileName, &file.FilePath, &file.Size, &file.Status, &file.CreatedAt, &file.UpdatedAt, &file.DeletedAt); err != nil {
+			return nil, err
+		}
+		files = append(files, *converter.ToFileMetadataFromRepo(&file))
+	}
+
+	return files, nil
+}
