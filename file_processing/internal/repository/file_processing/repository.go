@@ -101,7 +101,7 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 	return err
 }
 
-func (r *repo) Update(ctx context.Context, file model.UploadedFile) error {
+func (r *repo) Update(ctx context.Context, file *model.UploadedFile) error {
 	builder := sq.Update(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Set(fileNameColumn, file.FileName).
