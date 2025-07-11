@@ -6,7 +6,6 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1;file_processing_v1";
 
-
 service FileProcessingService {
   rpc UploadCSVFile(stream UploadCSVFileRequest) returns (UploadCSVResponse);
   rpc GetFileMetadata(GetFileRequest) returns (FileMetadataResponse);
@@ -21,33 +20,27 @@ message UploadCSVFileRequest {
 }
 
 message UploadCSVResponse {
-  string file_id = 1;
+  int64 file_id = 1;
   string message = 2;
-  string status = 3; 
+  string status = 3;
 }
 
 message GetFileRequest {
-  string file_id = 1;
+  int64 file_id = 1;
 }
 
 message FileMetadataResponse {
-    string file_id = 1;
-    string file_name = 2;
-    string file_path = 3;
-    google.protobuf.Timestamp uploaded_at = 4;
-    string status = 5;
-    int64 record_count = 6;
-    int64 size = 7;
+  FileMetadata file = 1;
 }
 
 message UpdateCSVFileRequest {
-  string file_id = 1;
+  int64 file_id = 1;
   string file_name = 2;
   bytes new_content = 3;
 }
 
 message DeleteFileRequest {
-  string file_id = 1;
+  int64 file_id = 1;
 }
 
 message DeleteFileResponse {
@@ -65,11 +58,11 @@ message ListFilesResponse {
 }
 
 message FileMetadata {
-    int64 file_id = 1;
-    string file_name = 2;
-    string file_path = 3;
-    google.protobuf.Timestamp uploaded_at = 4;
-    string status = 5;
-    int64 record_count = 6;
-    int64 size = 7;
+  int64 file_id = 1;
+  string file_name = 2;
+  string file_path = 3;
+  google.protobuf.Timestamp uploaded_at = 4;
+  string status = 5;
+  int64 record_count = 6;
+  int64 size = 7;
 }
