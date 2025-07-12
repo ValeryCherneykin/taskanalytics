@@ -39,7 +39,7 @@ func (r *repo) Create(ctx context.Context, file *model.UploadedFile) (int64, err
 		PlaceholderFormat(sq.Dollar).
 		Columns(fileNameColumn, filePathColumn, sizeColumn, statusColumn).
 		Values(file.FileName, file.FilePath, file.Size, file.Status).
-		Suffix("RETURNING ID")
+		Suffix("RETURNING file_id")
 
 	query, args, err := builder.ToSql()
 	if err != nil {

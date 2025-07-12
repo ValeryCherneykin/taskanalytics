@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
 
 CREATE TABLE IF NOT EXISTS file_records (
     id BIGSERIAL PRIMARY KEY,
-    file_id BIGINT NOT NULL REFERENCES uploaded_files(file_id)
+    file_id BIGINT NOT NULL REFERENCES uploaded_files(file_id), 
     data TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

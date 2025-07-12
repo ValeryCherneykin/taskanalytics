@@ -1,7 +1,22 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"log"
+
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/app"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	ctx := context.Background()
+
+	a, err := app.NewApp(ctx)
+	if err != nil {
+		log.Fatalf("failed to init app: %s", err.Error())
+	}
+
+	err = a.Run()
+	if err != nil {
+		log.Fatalf("failed to run app: %s", err.Error())
+	}
 }
