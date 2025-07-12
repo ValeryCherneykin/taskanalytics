@@ -51,6 +51,8 @@ message DeleteFileResponse {
 message ListFilesRequest {
   string status_filter = 1;
   google.protobuf.Timestamp uploaded_after = 2;
+  uint64 limit = 3;
+  uint64 offset = 4;
 }
 
 message ListFilesResponse {
