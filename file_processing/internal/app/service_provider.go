@@ -11,7 +11,9 @@ import (
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/closer"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/config"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/repository"
+	uploadFileRepository "github.com/ValeryCherneykin/taskanalytics/file_processing/internal/repository/file_processing"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/service"
+	uploadFileService "github.com/ValeryCherneykin/taskanalytics/file_processing/internal/service/file_processing"
 )
 
 type serviceProvider struct {
@@ -21,10 +23,10 @@ type serviceProvider struct {
 
 	dbClient                 db.Client
 	txManager                db.TxManager
-	fileprocessingRepository repository.UploadedFileRepository
+	fileProcessingRepository repository.UploadedFileRepository
 
-	fileprocessing     service.FileProcessingService
-	fileProcessingImpl *fileprocessing.Implementation
+	fileProcessingService service.FileProcessingService
+	fileProcessingImpl    *fileprocessing.Implementation
 }
 
 func newServiceProvider() *serviceProvider {
@@ -93,4 +95,28 @@ func (s *serviceProvider) TxManager(ctx context.Context) db.TxManager {
 	}
 
 	return s.txManager
+}
+
+func (s *serviceProvider) FileProcessingRepository(ctx context.Context) repository.UploadedFileRepository {
+	if s.fileProcessingRepository == nil {
+		s.fileProcessingRepository = uploadFileRepository.NewRepository(s.DBClient(ctx))
+	}
+	return s.fileProcessingRepository
+}
+
+func (s *serviceProvider) FileProcessingService(ctx context.Context) service.FileProcessingService {
+	if s.fileProcessingService == nil {
+		s.fileProcessingService = uploadFileService.NewService(
+			s.FileProcessingRepository(ctx),
+			s.TxManager(ctx),
+		)
+	}
+	return s.fileProcessingService
+}
+
+func (s *serviceProvider) FileProcessingImpl(ctx context.Context) *fileprocessing.Implementation {
+	if s.fileProcessingImpl == nil {
+		s.fileProcessingImpl = fileprocessing.NewImplementation(s.FileProcessingService(ctx), s.storageConfig)
+	}
+	return s.fileProcessingImpl
 }
