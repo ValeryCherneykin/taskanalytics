@@ -116,7 +116,10 @@ func (s *serviceProvider) FileProcessingService(ctx context.Context) service.Fil
 
 func (s *serviceProvider) FileProcessingImpl(ctx context.Context) *fileprocessing.Implementation {
 	if s.fileProcessingImpl == nil {
-		s.fileProcessingImpl = fileprocessing.NewImplementation(s.FileProcessingService(ctx), s.storageConfig)
+		s.fileProcessingImpl = fileprocessing.NewImplementation(
+			s.FileProcessingService(ctx),
+			s.StorageConfig(),
+		)
 	}
 	return s.fileProcessingImpl
 }
