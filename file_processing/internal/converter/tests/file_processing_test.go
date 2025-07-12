@@ -32,7 +32,7 @@ func TestToFileMetadata(t *testing.T) {
 		RecordCount: 42,
 	}
 
-	result := converter.ToFileMetadata(file, 42)
+	result := converter.ToFileMetadata(&file, 42)
 
 	assert.Equal(t, expected, result)
 }

@@ -7,7 +7,7 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1;file_processing_v1";
 
 service FileProcessingService {
-  rpc UploadCSVFile(stream UploadCSVFileRequest) returns (UploadCSVResponse);
+  rpc UploadCSVFile(UploadCSVFileRequest) returns (UploadCSVResponse); // Убрали stream
   rpc GetFileMetadata(GetFileRequest) returns (FileMetadataResponse);
   rpc UpdateCSVFile(UpdateCSVFileRequest) returns (UploadCSVResponse);
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
