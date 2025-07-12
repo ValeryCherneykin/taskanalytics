@@ -1,8 +1,14 @@
 package app
 
 import (
+	"context"
+	"log"
+
 	fileprocessing "github.com/ValeryCherneykin/taskanalytics/file_processing/internal/api/file_processing"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db/pg"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db/transaction"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/closer"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/config"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/repository"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/service"
@@ -23,4 +29,68 @@ type serviceProvider struct {
 
 func newServiceProvider() *serviceProvider {
 	return &serviceProvider{}
+}
+
+func (s *serviceProvider) PgConfig() config.PGConfig {
+	if s.pgConfig == nil {
+		cfg, err := config.NewPGConfig()
+		if err != nil {
+			log.Fatalf("failed to get pg config: %s", err.Error())
+		}
+
+		s.pgConfig = cfg
+	}
+
+	return s.pgConfig
+}
+
+func (s *serviceProvider) GRPCConfig() config.GRPCConfig {
+	if s.grpcConfig == nil {
+		cfg, err := config.NewGRPCConfig()
+		if err != nil {
+			log.Fatalf("failed to get grpc config: %s", err.Error())
+		}
+
+		s.grpcConfig = cfg
+	}
+
+	return s.grpcConfig
+}
+
+func (s *serviceProvider) StorageConfig() config.StorageConfig {
+	if s.storageConfig == nil {
+		cfg, err := config.NewStorageConfig()
+		if err != nil {
+			log.Fatalf("failed to get storage config: %s", err.Error())
+		}
+		s.storageConfig = cfg
+	}
+	return s.storageConfig
+}
+
+func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
+	if s.dbClient == nil {
+		cl, err := pg.New(ctx, s.PgConfig().DSN())
+		if err != nil {
+			log.Fatalf("failed to create db client: %v", err)
+		}
+
+		err = cl.DB().Ping(ctx)
+		if err != nil {
+			log.Fatalf("ping error: %s", err.Error())
+		}
+		closer.Add(cl.Close)
+
+		s.dbClient = cl
+	}
+
+	return s.dbClient
+}
+
+func (s *serviceProvider) TxManager(ctx context.Context) db.TxManager {
+	if s.txManager == nil {
+		s.txManager = transaction.NewTransactionManager(s.DBClient(ctx).DB())
+	}
+
+	return s.txManager
 }
