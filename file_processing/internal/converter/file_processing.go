@@ -4,15 +4,18 @@ import (
 	"path/filepath"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/config"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/model"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func ToModelFromUploadRequest(req *desc.UploadCSVFileRequest, storageConfig config.StorageConfig) *model.UploadedFile {
 	fileName := filepath.Base(req.GetFileName())
 	if fileName == "." || fileName == ".." || fileName == "" {
+		logger.Warn("invalid filename in request, using fallback", zap.String("original", req.GetFileName()))
 		fileName = "unnamed.csv"
 	}
 	filePath := filepath.Join(storageConfig.Path(), uuid.New().String(), fileName)
