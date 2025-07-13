@@ -2,10 +2,11 @@ package fileprocessing
 
 import (
 	"context"
-	"log"
 	"os"
 
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -28,7 +29,10 @@ func (i *Implementation) DeleteFile(ctx context.Context, req *desc.DeleteFileReq
 		return nil, status.Errorf(codes.Internal, "failed to delete file metadata: %v", err)
 	}
 
-	log.Printf("deleted file with id: %d, name: %s", file.FileID, file.FileName)
+	logger.Info("deleted file",
+		zap.Int64("file_id", file.FileID),
+		zap.String("file_name", file.FileName),
+	)
 
 	return &desc.DeleteFileResponse{
 		Success: true,

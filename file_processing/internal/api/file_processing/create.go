@@ -3,13 +3,14 @@ package fileprocessing
 import (
 	"context"
 	"encoding/csv"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/converter"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -49,7 +50,11 @@ func (i *Implementation) UploadCSVFile(ctx context.Context, req *desc.UploadCSVF
 		return nil, status.Errorf(codes.Internal, "failed to save file metadata: %v", err)
 	}
 
-	log.Printf("uploaded file with id: %d, name: %s, records: %d", id, req.GetFileName(), recordCount)
+	logger.Info("uploaded file",
+		zap.Int64("file_id", id),
+		zap.String("name", req.GetFileName()),
+		zap.Int64("records", recordCount),
+	)
 
 	return &desc.UploadCSVResponse{
 		FileId:  id,

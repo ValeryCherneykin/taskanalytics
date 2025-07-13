@@ -3,13 +3,14 @@ package fileprocessing
 import (
 	"context"
 	"encoding/csv"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/model"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -63,7 +64,11 @@ func (i *Implementation) UpdateCSVFile(ctx context.Context, req *desc.UpdateCSVF
 		return nil, status.Errorf(codes.Internal, "failed to update file metadata: %v", err)
 	}
 
-	log.Printf("updated file with id: %d, name: %s, records: %d", file.FileID, newFileName, recordCount)
+	logger.Info("updated file",
+		zap.Int64("file_id", file.FileID),
+		zap.String("file_name", newFileName),
+		zap.Int64("record_count", recordCount),
+	)
 
 	return &desc.UploadCSVResponse{
 		FileId:  file.FileID,

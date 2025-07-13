@@ -3,12 +3,13 @@ package fileprocessing
 import (
 	"context"
 	"encoding/csv"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/converter"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -35,7 +36,11 @@ func (i *Implementation) GetFileMetadata(ctx context.Context, req *desc.GetFileR
 	}
 	recordCount := int64(len(records))
 
-	log.Printf("retrieved metadata for file with id: %d, name: %s, records: %d", file.FileID, file.FileName, recordCount)
+	logger.Info("retrieved file metadata",
+		zap.Int64("file_id", file.FileID),
+		zap.String("file_name", file.FileName),
+		zap.Int64("record_count", recordCount),
+	)
 
 	return &desc.FileMetadataResponse{
 		File: converter.ToFileMetadata(file, recordCount),

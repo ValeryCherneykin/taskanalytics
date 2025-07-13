@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/converter"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -33,6 +35,12 @@ func (i *Implementation) ListFiles(ctx context.Context, req *desc.ListFilesReque
 
 		result = append(result, converter.ToFileMetadata(file, recordCount))
 	}
+
+	logger.Info("listed files",
+		zap.Int("files_count", len(result)),
+		zap.Uint64("limit", req.GetLimit()),
+		zap.Uint64("offset", req.GetOffset()),
+	)
 
 	return &desc.ListFilesResponse{
 		Files: result,
