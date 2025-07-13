@@ -4,8 +4,11 @@ import (
 	"context"
 	"net"
 
+	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/closer"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/config"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/interceptor"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
 	"go.uber.org/zap"
@@ -78,7 +81,15 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 func (a *App) initGRPCServer(ctx context.Context) error {
-	a.grpcServer = grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	a.grpcServer = grpc.NewServer(
+		grpc.Creds(insecure.NewCredentials()),
+		grpc.UnaryInterceptor(
+			grpcMiddleware.ChainUnaryServer(
+				interceptor.LogInterceptor,
+				interceptor.ValidateInterceptor,
+			),
+		),
+	)
 
 	reflection.Register(a.grpcServer)
 
