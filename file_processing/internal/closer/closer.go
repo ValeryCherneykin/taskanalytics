@@ -1,10 +1,12 @@
 package closer
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"sync"
+
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
+	"go.uber.org/zap"
 )
 
 var globalCloser = New()
@@ -34,8 +36,9 @@ func New(sig ...os.Signal) *Closer {
 		go func() {
 			ch := make(chan os.Signal, 1)
 			signal.Notify(ch, sig...)
-			<-ch
+			s := <-ch
 			signal.Stop(ch)
+			logger.Info("received shutdown signal", zap.String("signal", s.String()))
 			c.CloseAll()
 		}()
 	}
@@ -56,6 +59,8 @@ func (c *Closer) CloseAll() {
 	c.once.Do(func() {
 		defer close(c.done)
 
+		logger.Info("executing cleanup funcs")
+
 		c.mu.Lock()
 		funcs := c.funcs
 		c.funcs = nil
@@ -70,9 +75,9 @@ func (c *Closer) CloseAll() {
 
 		for i := 0; i < cap(errs); i++ {
 			if err := <-errs; err != nil {
-				log.Println("error returned from Closer")
+				logger.Error("error during cleanup", zap.Error(err))
 			}
 		}
+		logger.Info("all cleanup funcs executed")
 	})
 }
-
