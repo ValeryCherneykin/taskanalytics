@@ -7,6 +7,11 @@ import (
 
 var globalLogger *zap.Logger
 
+func NewLogger() (*zap.Logger, error) {
+	cfg := zap.NewProductionConfig()
+	return cfg.Build()
+}
+
 func Init(core zapcore.Core, options ...zap.Option) {
 	globalLogger = zap.New(core, options...)
 }

@@ -2,12 +2,13 @@ package app
 
 import (
 	"context"
-	"log"
 	"net"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/closer"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/config"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -16,13 +17,20 @@ import (
 type App struct {
 	serviceProvider *serviceProvider
 	grpcServer      *grpc.Server
+	logger          *zap.Logger
 }
 
 func NewApp(ctx context.Context) (*App, error) {
-	a := &App{}
-
-	err := a.initDeps(ctx)
+	logger, err := logger.NewLogger()
 	if err != nil {
+		return nil, err
+	}
+
+	a := &App{logger: logger}
+
+	err = a.initDeps(ctx)
+	if err != nil {
+		logger.Error("failed to init app", zap.Error(err))
 		return nil, err
 	}
 
@@ -65,7 +73,7 @@ func (a *App) initConfig(_ context.Context) error {
 }
 
 func (a *App) initServiceProvider(_ context.Context) error {
-	a.serviceProvider = newServiceProvider()
+	a.serviceProvider = newServiceProvider(a.logger)
 	return nil
 }
 
@@ -79,15 +87,18 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 }
 
 func (a *App) runGRPCServer() error {
-	log.Printf("GRPC server is running on %s", a.serviceProvider.GRPCConfig().Address())
+	addr := a.serviceProvider.GRPCConfig().Address()
 
-	list, err := net.Listen("tcp", a.serviceProvider.GRPCConfig().Address())
+	a.logger.Info("gRPC server starting...", zap.String("address", addr))
+
+	list, err := net.Listen("tcp", addr)
 	if err != nil {
+		a.logger.Error("failed to listen", zap.Error(err))
 		return err
 	}
 
-	err = a.grpcServer.Serve(list)
-	if err != nil {
+	if err := a.grpcServer.Serve(list); err != nil {
+		a.logger.Error("failed to serve", zap.Error(err))
 		return err
 	}
 
