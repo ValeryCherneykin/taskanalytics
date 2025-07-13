@@ -2,15 +2,15 @@ package pg
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db/prettier"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 )
 
 type key string
@@ -85,14 +85,17 @@ func (p *pg) QueryRowContext(ctx context.Context, q db.Query, args ...interface{
 }
 
 func (p *pg) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error) {
+	logger.Debug("beginning transaction", zap.Any("options", txOptions))
 	return p.dbc.BeginTx(ctx, txOptions)
 }
 
 func (p *pg) Ping(ctx context.Context) error {
+	logger.Debug("pinging database")
 	return p.dbc.Ping(ctx)
 }
 
 func (p *pg) Close() {
+	logger.Info("closing PostgreSQL connection pool")
 	p.dbc.Close()
 }
 
@@ -102,9 +105,8 @@ func MakeContextTx(ctx context.Context, tx pgx.Tx) context.Context {
 
 func logQuery(ctx context.Context, q db.Query, args ...interface{}) {
 	prettyQuery := prettier.Pretty(q.QueryRaw, prettier.PlaceholderDollar, args...)
-	log.Println(
-		ctx,
-		fmt.Sprintf("sql: %s", q.Name),
-		fmt.Sprintf("query: %s", prettyQuery),
+	logger.Debug("executing SQL query",
+		zap.String("name", q.Name),
+		zap.String("query", prettyQuery),
 	)
 }

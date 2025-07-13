@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type pgClient struct {
@@ -15,9 +17,11 @@ type pgClient struct {
 func New(ctx context.Context, dsn string) (db.Client, error) {
 	dbc, err := pgxpool.Connect(ctx, dsn)
 	if err != nil {
+		logger.Error("failed to connect to PostgreSQL", zap.Error(err))
 		return nil, errors.Errorf("failed to connect to db: %v", err)
 	}
 
+	logger.Info("connected to PostgreSQL")
 	return &pgClient{
 		masterDBC: &pg{dbc: dbc},
 	}, nil
