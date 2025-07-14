@@ -13,6 +13,7 @@ import (
 
 func (i *Implementation) DeleteFile(ctx context.Context, req *desc.DeleteFileRequest) (*desc.DeleteFileResponse, error) {
 	if req.GetFileId() <= 0 {
+		logger.Error("Invalid file_id", zap.Int64("file_id", req.GetFileId()))
 		return nil, status.Errorf(codes.InvalidArgument, "file_id must be positive")
 	}
 
@@ -22,6 +23,7 @@ func (i *Implementation) DeleteFile(ctx context.Context, req *desc.DeleteFileReq
 	}
 
 	if err := os.Remove(file.FilePath); err != nil && !os.IsNotExist(err) {
+		logger.Error("Failed to delete file", zap.String("path", file.FilePath), zap.Error(err))
 		return nil, status.Errorf(codes.Internal, "failed to delete file from disk: %v", err)
 	}
 

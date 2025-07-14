@@ -18,14 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeStorageConfig struct {
-	basePath string
-}
-
-func (f *fakeStorageConfig) Path() string {
-	return f.basePath
-}
-
 func TestUploadCSVFile(t *testing.T) {
 	t.Parallel()
 
@@ -120,7 +112,7 @@ func TestUploadCSVFile(t *testing.T) {
 			},
 			errContains: "invalid CSV format",
 			serviceMockFn: func(mc *minimock.Controller) service.FileProcessingService {
-				return serviceMocks.NewFileProcessingServiceMock(mc) // Просто возвращаем мок без ожиданий
+				return serviceMocks.NewFileProcessingServiceMock(mc)
 			},
 		},
 		{
@@ -149,7 +141,6 @@ func TestUploadCSVFile(t *testing.T) {
 			t.Parallel()
 
 			mc := minimock.NewController(t)
-			t.Cleanup(mc.Finish)
 
 			storageCfg := &fakeStorageConfig{basePath: basePath}
 			serviceMock := tt.serviceMockFn(mc)
