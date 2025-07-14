@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/converter"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
@@ -29,12 +30,28 @@ func (i *Implementation) UploadCSVFile(ctx context.Context, req *desc.UploadCSVF
 		return nil, status.Errorf(codes.InvalidArgument, "file size exceeds limit of %d bytes", maxFileSize)
 	}
 
+	if !utf8.Valid(content) {
+		logger.Error("invalid CSV content", zap.ByteString("content", content))
+		return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: content is not valid UTF-8")
+	}
+
 	reader := csv.NewReader(strings.NewReader(string(content)))
 	records, err := reader.ReadAll()
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: %v", err)
 	}
-	recordCount := int64(len(records))
+	if len(records) <= 1 {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: file must contain a header and at least one data row")
+	}
+
+	if len(records) > 0 {
+		expectedColumns := len(records[0])
+		for i, row := range records[1:] {
+			if len(row) != expectedColumns {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: inconsistent column count in row %d", i+2)
+			}
+		}
+	}
 
 	file := converter.ToModelFromUploadRequest(req, i.storageConfig)
 
@@ -53,7 +70,7 @@ func (i *Implementation) UploadCSVFile(ctx context.Context, req *desc.UploadCSVF
 	logger.Info("uploaded file",
 		zap.Int64("file_id", id),
 		zap.String("name", req.GetFileName()),
-		zap.Int64("records", recordCount),
+		zap.Int64("records", int64(len(records)-1)),
 	)
 
 	return &desc.UploadCSVResponse{

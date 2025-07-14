@@ -4,3 +4,5 @@ TODO.md
 /file_processing/bin/
 .env
 uploads/
+test_data/
+

@@ -47,3 +47,7 @@ func Sync() {
 func With(fields ...zap.Field) *zap.Logger {
 	return globalLogger.With(fields...)
 }
+
+func InitTest() {
+	globalLogger = zap.NewNop()
+}
