@@ -3,13 +3,16 @@ package app
 import (
 	"context"
 	"net"
+	"net/http"
 
 	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/closer"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/config"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/interceptor"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/logger"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/metric"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -46,6 +49,12 @@ func (a *App) Run() error {
 		closer.Wait()
 	}()
 
+	go func() {
+		if err := runPrometheus(a.logger); err != nil {
+			a.logger.Error("prometheus server error", zap.Error(err))
+		}
+	}()
+
 	return a.runGRPCServer()
 }
 
@@ -53,9 +62,13 @@ func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initConfig,
 		a.initServiceProvider,
+
+		func(ctx context.Context) error {
+			return metric.Init(ctx)
+		},
+
 		a.initGRPCServer,
 	}
-
 	for _, f := range inits {
 		err := f(ctx)
 		if err != nil {
@@ -86,6 +99,7 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 		grpc.UnaryInterceptor(
 			grpcMiddleware.ChainUnaryServer(
 				interceptor.LogInterceptor,
+				interceptor.MetricsInterceptor,
 				interceptor.ValidateInterceptor,
 			),
 		),
@@ -110,6 +124,25 @@ func (a *App) runGRPCServer() error {
 
 	if err := a.grpcServer.Serve(list); err != nil {
 		a.logger.Error("failed to serve", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func runPrometheus(logger *zap.Logger) error {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	prometheusServer := &http.Server{
+		Addr:    "localhost:2112",
+		Handler: mux,
+	}
+
+	logger.Info("Prometheus server is running", zap.String("address", "localhost:2112"))
+
+	err := prometheusServer.ListenAndServe()
+	if err != nil {
 		return err
 	}
 

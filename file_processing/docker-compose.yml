@@ -2,6 +2,7 @@ version: '3.9'
 
 volumes:
   postgres_volume:
+  prometheus_data:
 
 services:
   pg:
