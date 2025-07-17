@@ -2,9 +2,8 @@ package tests
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 
 	fileprocessing "github.com/ValeryCherneykin/taskanalytics/file_processing/internal/api/file_processing"
@@ -15,7 +14,6 @@ import (
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
 )
@@ -23,148 +21,114 @@ import (
 func TestDeleteFile(t *testing.T) {
 	t.Parallel()
 
-	type fileProcessingServiceMockFunc func(mc *minimock.Controller, fileID int64, filePath string) service.FileProcessingService
-
-	type args struct {
-		ctx context.Context
-		req *desc.DeleteFileRequest
-	}
-
 	ctx := context.Background()
+	basePath := "test_data"
+	testFileID := int64(123)
+	testFilePath := basePath + "/test.csv"
+	testFileName := "test.csv"
 
-	wantRes := &desc.DeleteFileResponse{
-		Success: true,
-		Message: "File deleted successfully",
+	testFile := &model.UploadedFile{
+		FileID:   testFileID,
+		FilePath: testFilePath,
+		FileName: testFileName,
 	}
-
-	serviceErr := errors.New("failed to delete metadata")
 
 	tests := []struct {
 		name          string
-		args          args
-		fileID        int64
-		filename      string
-		filePath      string
-		want          *desc.DeleteFileResponse
+		req           *desc.DeleteFileRequest
+		setupMock     func(mc *minimock.Controller) service.FileProcessingService
+		wantErr       bool
 		errContains   string
-		serviceMockFn fileProcessingServiceMockFunc
-		prepare       func(filePath string) error
-		cleanup       func(filePath string)
+		expectedReply *desc.DeleteFileResponse
+		setupFile     bool
 	}{
 		{
-			name:     "success case",
-			fileID:   int64(gofakeit.Uint64()) + 1,
-			filename: "test.csv",
-			filePath: "test_data/" + gofakeit.UUID() + "/test.csv",
-			args: args{
-				ctx: ctx,
-				req: &desc.DeleteFileRequest{},
+			name: "successfully delete file",
+			req: &desc.DeleteFileRequest{
+				FileId: testFileID,
 			},
-			want: wantRes,
-			serviceMockFn: func(mc *minimock.Controller, fileID int64, filePath string) service.FileProcessingService {
+			setupFile: true,
+			setupMock: func(mc *minimock.Controller) service.FileProcessingService {
 				mock := serviceMocks.NewFileProcessingServiceMock(mc)
-				mock.GetMock.Expect(ctx, fileID).Return(&model.UploadedFile{
-					FileID:   fileID,
-					FileName: "test.csv",
-					FilePath: filePath,
-				}, nil)
-				mock.DeleteMock.Expect(ctx, fileID).Return(nil)
+				mock.GetMock.Set(func(ctx context.Context, id int64) (*model.UploadedFile, error) {
+					return testFile, nil
+				})
+				mock.DeleteMock.Set(func(ctx context.Context, id int64) error {
+					return nil
+				})
 				return mock
 			},
-			prepare: func(filePath string) error {
-				if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
-					return err
-				}
-				return os.WriteFile(filePath, []byte("test"), 0o644)
-			},
-			cleanup: func(filePath string) {
-				os.Remove(filePath)
-				os.RemoveAll(filepath.Dir(filePath))
+			expectedReply: &desc.DeleteFileResponse{
+				Success: true,
+				Message: "File deleted successfully",
 			},
 		},
 		{
-			name:     "invalid file_id",
-			fileID:   0,
-			filename: "test.csv",
-			filePath: "test_data/" + gofakeit.UUID() + "/test.csv",
-			args: args{
-				ctx: ctx,
-				req: &desc.DeleteFileRequest{
-					FileId: 0,
-				},
+			name: "file_id is invalid",
+			req: &desc.DeleteFileRequest{
+				FileId: -1,
 			},
-			errContains: "file_id must be positive",
-			serviceMockFn: func(mc *minimock.Controller, fileID int64, filePath string) service.FileProcessingService {
+			setupMock: func(mc *minimock.Controller) service.FileProcessingService {
 				return serviceMocks.NewFileProcessingServiceMock(mc)
 			},
+			wantErr:     true,
+			errContains: "file_id must be positive",
 		},
 		{
-			name:     "file not found",
-			fileID:   int64(gofakeit.Uint64()) + 1,
-			filename: "test.csv",
-			filePath: "test_data/" + gofakeit.UUID() + "/test.csv",
-			args: args{
-				ctx: ctx,
-				req: &desc.DeleteFileRequest{},
+			name: "file not found in metadata",
+			req: &desc.DeleteFileRequest{
+				FileId: testFileID,
 			},
+			setupMock: func(mc *minimock.Controller) service.FileProcessingService {
+				mock := serviceMocks.NewFileProcessingServiceMock(mc)
+				mock.GetMock.Set(func(ctx context.Context, id int64) (*model.UploadedFile, error) {
+					return nil, fmt.Errorf("not found")
+				})
+				return mock
+			},
+			wantErr:     true,
 			errContains: "file not found",
-			serviceMockFn: func(mc *minimock.Controller, fileID int64, filePath string) service.FileProcessingService {
+		},
+		{
+			name: "os.Remove fails",
+			req: &desc.DeleteFileRequest{
+				FileId: testFileID,
+			},
+			setupMock: func(mc *minimock.Controller) service.FileProcessingService {
 				mock := serviceMocks.NewFileProcessingServiceMock(mc)
-				mock.GetMock.Expect(ctx, fileID).Return(nil, errors.New("file not found"))
+				mock.GetMock.Set(func(ctx context.Context, id int64) (*model.UploadedFile, error) {
+					return testFile, nil
+				})
+				mock.DeleteMock.Set(func(ctx context.Context, id int64) error {
+					return nil
+				})
 				return mock
+			},
+			setupFile: false,
+			wantErr:   false,
+			expectedReply: &desc.DeleteFileResponse{
+				Success: true,
+				Message: "File deleted successfully",
 			},
 		},
 		{
-			name:     "file does not exist on disk",
-			fileID:   int64(gofakeit.Uint64()) + 1,
-			filename: "test.csv",
-			filePath: "test_data/" + gofakeit.UUID() + "/test.csv",
-			args: args{
-				ctx: ctx,
-				req: &desc.DeleteFileRequest{},
+			name: "error during metadata delete",
+			req: &desc.DeleteFileRequest{
+				FileId: testFileID,
 			},
-			want: wantRes,
-			serviceMockFn: func(mc *minimock.Controller, fileID int64, filePath string) service.FileProcessingService {
+			setupFile: true,
+			setupMock: func(mc *minimock.Controller) service.FileProcessingService {
 				mock := serviceMocks.NewFileProcessingServiceMock(mc)
-				mock.GetMock.Expect(ctx, fileID).Return(&model.UploadedFile{
-					FileID:   fileID,
-					FileName: "test.csv",
-					FilePath: filePath,
-				}, nil)
-				mock.DeleteMock.Expect(ctx, fileID).Return(nil)
+				mock.GetMock.Set(func(ctx context.Context, id int64) (*model.UploadedFile, error) {
+					return testFile, nil
+				})
+				mock.DeleteMock.Set(func(ctx context.Context, id int64) error {
+					return fmt.Errorf("db error")
+				})
 				return mock
 			},
-		},
-		{
-			name:     "service delete error",
-			fileID:   int64(gofakeit.Uint64()) + 1,
-			filename: "test.csv",
-			filePath: "test_data/" + gofakeit.UUID() + "/test.csv",
-			args: args{
-				ctx: ctx,
-				req: &desc.DeleteFileRequest{},
-			},
+			wantErr:     true,
 			errContains: "failed to delete file metadata",
-			serviceMockFn: func(mc *minimock.Controller, fileID int64, filePath string) service.FileProcessingService {
-				mock := serviceMocks.NewFileProcessingServiceMock(mc)
-				mock.GetMock.Expect(ctx, fileID).Return(&model.UploadedFile{
-					FileID:   fileID,
-					FileName: "test.csv",
-					FilePath: filePath,
-				}, nil)
-				mock.DeleteMock.Expect(ctx, fileID).Return(serviceErr)
-				return mock
-			},
-			prepare: func(filePath string) error {
-				if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
-					return err
-				}
-				return os.WriteFile(filePath, []byte("test"), 0o644)
-			},
-			cleanup: func(filePath string) {
-				os.Remove(filePath)
-				os.RemoveAll(filepath.Dir(filePath))
-			},
 		},
 	}
 
@@ -173,34 +137,33 @@ func TestDeleteFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			if tt.setupFile {
+				_ = os.MkdirAll(basePath, 0o755)
+				err := os.WriteFile(testFilePath, []byte("test data"), 0o644)
+				require.NoError(t, err)
+				t.Cleanup(func() { os.Remove(testFilePath) })
+			}
+
 			mc := minimock.NewController(t)
-
-			tt.args.req.FileId = tt.fileID
-
-			if tt.prepare != nil {
-				require.NoError(t, tt.prepare(tt.filePath))
-			}
-			if tt.cleanup != nil {
-				t.Cleanup(func() { tt.cleanup(tt.filePath) })
-			}
+			t.Cleanup(mc.Finish)
 
 			logger.Init(zapcore.NewNopCore())
 
-			storageCfg := &fakeStorageConfig{basePath: "test_data"}
-			serviceMock := tt.serviceMockFn(mc, tt.fileID, tt.filePath)
+			storageCfg := &fakeStorageConfig{basePath: basePath}
+			serviceMock := tt.setupMock(mc)
 
 			impl := fileprocessing.NewImplementation(serviceMock, storageCfg)
 
-			got, err := impl.DeleteFile(tt.args.ctx, tt.args.req)
+			resp, err := impl.DeleteFile(ctx, tt.req)
 
-			if tt.errContains != "" {
+			if tt.wantErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), tt.errContains)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.expectedReply, resp)
 		})
 	}
 }
