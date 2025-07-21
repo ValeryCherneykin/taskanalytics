@@ -1,21 +1,26 @@
-version: '3.9'
-
 volumes:
   postgres_volume:
   prometheus_data:
   grafana_data:
+  minio_data:
+
+networks:
+  backend:
+    driver: bridge
 
 services:
   pg:
     image: postgres:14-alpine3.17
     environment:
-      - "POSTGRES_DB=${PG_DATABASE_NAME}"
-      - "POSTGRES_USER=${PG_USER}"
-      - "POSTGRES_PASSWORD=${PG_PASSWORD}"
+      - POSTGRES_DB=${PG_DATABASE_NAME}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
     ports:
       - "${PG_PORT}:5432"
     volumes:
       - postgres_volume:/var/lib/postgresql/data
+    networks:
+      - backend
 
   prometheus:
     image: prom/prometheus:v2.53.5 
@@ -25,13 +30,31 @@ services:
       - prometheus_data:/prometheus
     ports:
       - 9090:9090
+    networks:
+      - backend
 
   grafana:
     image: grafana/grafana-oss:12.0.2
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_USER= ${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD= ${GF_SECURITY_ADMIN_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
+    networks:
+      - backend
+
+  minio:
+    image: minio/minio:RELEASE.2025-07-18T21-56-31Z-cpuv1
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    networks:
+      - backend
