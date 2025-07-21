@@ -3,7 +3,6 @@ package fileprocessing
 import (
 	"context"
 	"encoding/csv"
-	"os"
 	"strings"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/converter"
@@ -22,13 +21,16 @@ func (i *Implementation) ListFiles(ctx context.Context, req *desc.ListFilesReque
 
 	var result []*desc.FileMetadata
 	for _, file := range files {
-		content, err := os.ReadFile(file.FilePath)
+		content, err := i.minioClient.Download(ctx, file.FilePath)
 		if err != nil {
+			logger.Error("failed to download file content", zap.String("file_path", file.FilePath), zap.Error(err))
 			continue
 		}
+
 		reader := csv.NewReader(strings.NewReader(string(content)))
 		records, err := reader.ReadAll()
 		if err != nil {
+			logger.Error("invalid CSV format", zap.String("file_path", file.FilePath), zap.Error(err))
 			continue
 		}
 		recordCount := int64(len(records))

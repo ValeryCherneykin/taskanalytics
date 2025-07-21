@@ -3,8 +3,6 @@ package fileprocessing
 import (
 	"context"
 	"encoding/csv"
-	"os"
-	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
@@ -22,10 +20,12 @@ func (i *Implementation) UploadCSVFile(ctx context.Context, req *desc.UploadCSVF
 	if req.GetFileName() == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "file name cannot be empty")
 	}
+
 	content := req.GetContent()
 	if len(content) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "file content cannot be empty")
 	}
+
 	if len(content) > maxFileSize {
 		return nil, status.Errorf(codes.InvalidArgument, "file size exceeds limit of %d bytes", maxFileSize)
 	}
@@ -44,22 +44,18 @@ func (i *Implementation) UploadCSVFile(ctx context.Context, req *desc.UploadCSVF
 		return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: file must contain a header and at least one data row")
 	}
 
-	if len(records) > 0 {
-		expectedColumns := len(records[0])
-		for i, row := range records[1:] {
-			if len(row) != expectedColumns {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: inconsistent column count in row %d", i+2)
-			}
+	expectedColumns := len(records[0])
+	for i, row := range records[1:] {
+		if len(row) != expectedColumns {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: inconsistent column count in row %d", i+2)
 		}
 	}
 
 	file := converter.ToModelFromUploadRequest(req, i.storageConfig)
 
-	if err := os.MkdirAll(filepath.Dir(file.FilePath), 0o755); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create directory: %v", err)
-	}
-	if err := os.WriteFile(file.FilePath, content, 0o644); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to write file: %v", err)
+	err = i.minioClient.Upload(ctx, file.FilePath, strings.NewReader(string(content)), file.Size, "text/csv")
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to upload file to storage: %v", err)
 	}
 
 	id, err := i.fileProcessingService.Create(ctx, file)

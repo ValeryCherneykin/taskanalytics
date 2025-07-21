@@ -3,7 +3,6 @@ package fileprocessing
 import (
 	"context"
 	"encoding/csv"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -56,8 +55,9 @@ func (i *Implementation) UpdateCSVFile(ctx context.Context, req *desc.UpdateCSVF
 		CreatedAt: file.CreatedAt,
 	}
 
-	if err := os.WriteFile(file.FilePath, newContent, 0o644); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to write file: %v", err)
+	err = i.minioClient.Upload(ctx, file.FilePath, strings.NewReader(string(newContent)), int64(len(newContent)), "text/csv")
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to upload updated file: %v", err)
 	}
 
 	if err := i.fileProcessingService.Update(ctx, updatedFile); err != nil {

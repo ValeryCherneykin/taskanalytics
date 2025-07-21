@@ -3,7 +3,6 @@ package fileprocessing
 import (
 	"context"
 	"encoding/csv"
-	"os"
 	"strings"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/converter"
@@ -24,9 +23,9 @@ func (i *Implementation) GetFileMetadata(ctx context.Context, req *desc.GetFileR
 		return nil, status.Errorf(codes.NotFound, "file not found: %v", err)
 	}
 
-	content, err := os.ReadFile(file.FilePath)
+	content, err := i.minioClient.Download(ctx, file.FilePath)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to read file: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to read file from storage: %v", err)
 	}
 
 	reader := csv.NewReader(strings.NewReader(string(content)))

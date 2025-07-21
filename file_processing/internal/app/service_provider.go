@@ -7,6 +7,8 @@ import (
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db/pg"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/db/transaction"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/storage"
+	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/client/storage/minio"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/closer"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/config"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/repository"
@@ -21,11 +23,12 @@ type serviceProvider struct {
 
 	pgConfig      config.PGConfig
 	grpcConfig    config.GRPCConfig
-	storageConfig config.StorageConfig
+	storageConfig config.S3Config
 
 	dbClient                 db.Client
 	txManager                db.TxManager
 	fileProcessingRepository repository.UploadedFileRepository
+	storageClient            storage.MinioClient
 
 	fileProcessingService service.FileProcessingService
 	fileProcessingImpl    *fileprocessing.Implementation
@@ -61,9 +64,9 @@ func (s *serviceProvider) GRPCConfig() config.GRPCConfig {
 	return s.grpcConfig
 }
 
-func (s *serviceProvider) StorageConfig() config.StorageConfig {
+func (s *serviceProvider) StorageConfig() config.S3Config {
 	if s.storageConfig == nil {
-		cfg, err := config.NewStorageConfig()
+		cfg, err := config.NewS3Config()
 		if err != nil {
 			s.logger.Fatal("failed to get storage config: %s", zap.Error(err))
 		}
@@ -99,6 +102,17 @@ func (s *serviceProvider) TxManager(ctx context.Context) db.TxManager {
 	return s.txManager
 }
 
+func (s *serviceProvider) StorageClient() storage.MinioClient {
+	if s.storageClient == nil {
+		client, err := minio.NewClient(s.StorageConfig())
+		if err != nil {
+			s.logger.Fatal("failed to create minio client", zap.Error(err))
+		}
+		s.storageClient = client
+	}
+	return s.storageClient
+}
+
 func (s *serviceProvider) FileProcessingRepository(ctx context.Context) repository.UploadedFileRepository {
 	if s.fileProcessingRepository == nil {
 		s.fileProcessingRepository = uploadFileRepository.NewRepository(s.DBClient(ctx))
@@ -121,6 +135,7 @@ func (s *serviceProvider) FileProcessingImpl(ctx context.Context) *fileprocessin
 		s.fileProcessingImpl = fileprocessing.NewImplementation(
 			s.FileProcessingService(ctx),
 			s.StorageConfig(),
+			s.StorageClient(),
 		)
 	}
 	return s.fileProcessingImpl

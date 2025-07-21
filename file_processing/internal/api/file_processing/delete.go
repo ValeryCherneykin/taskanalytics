@@ -23,8 +23,13 @@ func (i *Implementation) DeleteFile(ctx context.Context, req *desc.DeleteFileReq
 	}
 
 	if err := os.Remove(file.FilePath); err != nil && !os.IsNotExist(err) {
-		logger.Error("Failed to delete file", zap.String("path", file.FilePath), zap.Error(err))
+		logger.Error("Failed to delete file from disk", zap.String("path", file.FilePath), zap.Error(err))
 		return nil, status.Errorf(codes.Internal, "failed to delete file from disk: %v", err)
+	}
+
+	if err := i.minioClient.Delete(ctx, file.FilePath); err != nil {
+		logger.Error("Failed to delete file from MinIO", zap.String("object", file.FilePath), zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "failed to delete file from storage: %v", err)
 	}
 
 	if err := i.fileProcessingService.Delete(ctx, req.GetFileId()); err != nil {
