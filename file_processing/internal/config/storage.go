@@ -9,31 +9,54 @@ import (
 )
 
 const (
-	storagePathEnvName = "STORAGE_PATH"
+	endpoint     = "MINIO_ENDPOINT"
+	rootUser     = "MINIO_ROOT_USER"
+	rootPassword = "MINIO_ROOT_PASSWORD"
+	buckets      = "MINIO_DEFAULT_BUCKETS"
+	useSSL       = "MINIO_USE_SSL"
 )
 
-type StorageConfig interface {
-	Path() string
+type S3Config interface {
+	Endpoint() string
+	Bucket() string
+	AccessKey() string
+	SecretKey() string
+	UseSSL() bool
 }
 
-type storageConfig struct {
-	path string
+type s3Config struct {
+	endpoint  string
+	bucket    string
+	accessKey string
+	secretKey string
+	useSSL    bool
 }
 
-func NewStorageConfig() (StorageConfig, error) {
-	path := os.Getenv(storagePathEnvName)
-	if len(path) == 0 {
-		logger.Error("storage path not found", zap.String("env_var", storagePathEnvName))
-		return nil, errors.New("storage path not found")
+func NewS3Config() (S3Config, error) {
+	endpoint := os.Getenv(endpoint)
+	bucket := os.Getenv(buckets)
+	accessKey := os.Getenv(rootUser)
+	secretKey := os.Getenv(rootPassword)
+	useSSL := os.Getenv(useSSL) == "true"
+
+	if endpoint == "" || bucket == "" || accessKey == "" || len(secretKey) < 8 {
+		logger.Error("missing required minio config")
+		return nil, errors.New("invalid S3 config")
 	}
 
-	logger.Info("storage config loaded", zap.String("path", path))
+	logger.Info("s3 config loaded", zap.String("endpoint", endpoint), zap.String("bucket", bucket))
 
-	return &storageConfig{
-		path: path,
+	return &s3Config{
+		endpoint:  endpoint,
+		bucket:    bucket,
+		accessKey: accessKey,
+		secretKey: secretKey,
+		useSSL:    useSSL,
 	}, nil
 }
 
-func (cfg *storageConfig) Path() string {
-	return cfg.path
-}
+func (c *s3Config) Endpoint() string  { return c.endpoint }
+func (c *s3Config) Bucket() string    { return c.bucket }
+func (c *s3Config) AccessKey() string { return c.accessKey }
+func (c *s3Config) SecretKey() string { return c.secretKey }
+func (c *s3Config) UseSSL() bool      { return c.useSSL }
