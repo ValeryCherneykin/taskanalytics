@@ -11,11 +11,11 @@ import (
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/service"
 	serviceMocks "github.com/ValeryCherneykin/taskanalytics/file_processing/internal/service/mocks"
 	desc "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestUploadCSVFile(t *testing.T) {
@@ -31,7 +31,6 @@ func TestUploadCSVFile(t *testing.T) {
 	ctx := context.Background()
 	content := "Column1,Column2\n1,2\n3,4"
 	filename := "test.csv"
-	basePath := "test_data"
 	fileBytes := []byte(content)
 
 	validReq := &desc.UploadCSVFileRequest{
@@ -125,9 +124,6 @@ func TestUploadCSVFile(t *testing.T) {
 			serviceMockFn: func(mc *minimock.Controller) service.FileProcessingService {
 				mock := serviceMocks.NewFileProcessingServiceMock(mc)
 				mock.CreateMock.Set(func(_ context.Context, file *model.UploadedFile) (int64, error) {
-					if file.FileName != filename {
-						return 0, fmt.Errorf("unexpected filename: %s", file.FileName)
-					}
 					return 0, serviceErr
 				})
 				return mock
@@ -142,12 +138,18 @@ func TestUploadCSVFile(t *testing.T) {
 
 			mc := minimock.NewController(t)
 
-			storageCfg := &fakeStorageConfig{basePath: basePath}
-			serviceMock := tt.serviceMockFn(mc)
-
 			logger.Init(zapcore.NewNopCore())
 
-			impl := fileprocessing.NewImplementation(serviceMock, storageCfg)
+			s3Cfg := &fakeS3Config{
+				bucket:    "mock-bucket",
+				prefix:    "mock-prefix/",
+				endpoint:  "mock-endpoint",
+				accessKey: "mock-access",
+				secretKey: "mock-secret",
+				useSSL:    false,
+			}
+
+			impl := fileprocessing.NewImplementation(tt.serviceMockFn(mc), s3Cfg, &fakeUploader{})
 
 			got, err := impl.UploadCSVFile(tt.args.ctx, tt.args.req)
 
