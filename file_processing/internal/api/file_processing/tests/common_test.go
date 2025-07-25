@@ -23,10 +23,14 @@ func (f *fakeS3Config) SecretKey() string { return f.secretKey }
 func (f *fakeS3Config) UseSSL() bool      { return f.useSSL }
 
 type fakeUploader struct {
-	storage map[string][]byte
+	storage     map[string][]byte
+	uploadError error
 }
 
 func (f *fakeUploader) Upload(ctx context.Context, objectName string, reader io.Reader, size int64, contentType string) error {
+	if f.uploadError != nil {
+		return f.uploadError
+	}
 	if f.storage == nil {
 		f.storage = make(map[string][]byte)
 	}
@@ -38,7 +42,7 @@ func (f *fakeUploader) Upload(ctx context.Context, objectName string, reader io.
 	if int64(n) != size {
 		return errors.New("read size mismatch")
 	}
-	f.storage[objectName] = []byte{}
+	f.storage[objectName] = data
 	return nil
 }
 
