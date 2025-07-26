@@ -21,8 +21,10 @@ import (
 type serviceProvider struct {
 	logger *zap.Logger
 
-	pgConfig      config.PGConfig
-	grpcConfig    config.GRPCConfig
+	pgConfig   config.PGConfig
+	grpcConfig config.GRPCConfig
+	httpConfig config.HTTPConfig
+
 	storageConfig config.S3Config
 
 	dbClient                 db.Client
@@ -62,6 +64,19 @@ func (s *serviceProvider) GRPCConfig() config.GRPCConfig {
 	}
 
 	return s.grpcConfig
+}
+
+func (s *serviceProvider) HTTPConfig() config.HTTPConfig {
+	if s.httpConfig == nil {
+		cfg, err := config.NewHTTPConfig()
+		if err != nil {
+			s.logger.Fatal("failed to get http config: %s", zap.Error(err))
+		}
+
+		s.httpConfig = cfg
+	}
+
+	return s.httpConfig
 }
 
 func (s *serviceProvider) StorageConfig() config.S3Config {

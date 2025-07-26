@@ -3,15 +3,42 @@ syntax = "proto3";
 package fileprocessing_v1;
 
 import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
 
 option go_package = "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1;file_processing_v1";
 
 service FileProcessingService {
-  rpc UploadCSVFile(UploadCSVFileRequest) returns (UploadCSVResponse);
-  rpc GetFileMetadata(GetFileRequest) returns (FileMetadataResponse);
-  rpc UpdateCSVFile(UpdateCSVFileRequest) returns (UploadCSVResponse);
-  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
-  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse);
+  rpc UploadCSVFile(UploadCSVFileRequest) returns (UploadCSVResponse) {
+    option (google.api.http) = {
+      post: "/v1/files/upload"
+      body: "*"
+    };
+  }
+
+  rpc GetFileMetadata(GetFileRequest) returns (FileMetadataResponse) {
+    option (google.api.http) = {
+      get: "/v1/files/{file_id}"
+    };
+  }
+
+  rpc UpdateCSVFile(UpdateCSVFileRequest) returns (UploadCSVResponse) {
+    option (google.api.http) = {
+      put: "/v1/files/{file_id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
+    option (google.api.http) = {
+      delete: "/v1/files/{file_id}"
+    };
+  }
+
+  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
+    option (google.api.http) = {
+      get: "/v1/files"
+    };
+  }
 }
 
 message UploadCSVFileRequest {

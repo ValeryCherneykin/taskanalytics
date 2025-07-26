@@ -2,11 +2,15 @@ package app
 
 import (
 	"context"
+	"log"
 	"net"
 	"net/http"
+	"sync"
 
 	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/cors"
 
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/closer"
 	"github.com/ValeryCherneykin/taskanalytics/file_processing/internal/config"
@@ -24,6 +28,7 @@ type App struct {
 	serviceProvider *serviceProvider
 	grpcServer      *grpc.Server
 	logger          *zap.Logger
+	httpServer      *http.Server
 }
 
 func NewApp(ctx context.Context) (*App, error) {
@@ -49,19 +54,37 @@ func (a *App) Run() error {
 		closer.Wait()
 	}()
 
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
 	go func() {
-		if err := runPrometheus(a.logger); err != nil {
-			a.logger.Error("prometheus server error", zap.Error(err))
+		defer wg.Done()
+
+		err := a.runGRPCServer()
+		if err != nil {
+			logger.Error("failed to run GRPC server: %v", zap.Error(err))
 		}
 	}()
 
-	return a.runGRPCServer()
+	go func() {
+		defer wg.Done()
+
+		err := a.runHTTPServer()
+		if err != nil {
+			logger.Error("failed to run HTTP server: %v", zap.Error(err))
+		}
+	}()
+
+	wg.Wait()
+
+	return nil
 }
 
 func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initConfig,
 		a.initServiceProvider,
+		a.initHTTPServer,
 
 		func(ctx context.Context) error {
 			return metric.Init(ctx)
@@ -130,6 +153,17 @@ func (a *App) runGRPCServer() error {
 	return nil
 }
 
+func (a *App) runHTTPServer() error {
+	log.Printf("HTTP server is running on %s", a.serviceProvider.HTTPConfig().Address())
+
+	err := a.httpServer.ListenAndServe()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func runPrometheus(logger *zap.Logger) error {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
@@ -144,6 +178,33 @@ func runPrometheus(logger *zap.Logger) error {
 	err := prometheusServer.ListenAndServe()
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (a *App) initHTTPServer(ctx context.Context) error {
+	mux := runtime.NewServeMux()
+
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
+
+	err := desc.RegisterFileProcessingServiceHandlerFromEndpoint(ctx, mux, a.serviceProvider.GRPCConfig().Address(), opts)
+	if err != nil {
+		return err
+	}
+
+	corsMiddleware := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Content-Type", "Content-Length", "Authorization"},
+		AllowCredentials: true,
+	})
+
+	a.httpServer = &http.Server{
+		Addr:    a.serviceProvider.HTTPConfig().Address(),
+		Handler: corsMiddleware.Handler(mux),
 	}
 
 	return nil
