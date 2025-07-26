@@ -12,9 +12,9 @@ import (
 )
 
 func (i *Implementation) DeleteFile(ctx context.Context, req *desc.DeleteFileRequest) (*desc.DeleteFileResponse, error) {
-	if req.GetFileId() <= 0 {
-		logger.Error("Invalid file_id", zap.Int64("file_id", req.GetFileId()))
-		return nil, status.Errorf(codes.InvalidArgument, "file_id must be positive")
+	if err := req.Validate(); err != nil {
+		logger.Error("validation failed", zap.Error(err))
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
 	}
 
 	file, err := i.fileProcessingService.Get(ctx, req.GetFileId())

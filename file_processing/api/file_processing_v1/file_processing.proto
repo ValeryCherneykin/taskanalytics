@@ -4,6 +4,7 @@ package fileprocessing_v1;
 
 import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1;file_processing_v1";
 
@@ -42,8 +43,8 @@ service FileProcessingService {
 }
 
 message UploadCSVFileRequest {
-  string file_name = 1;
-  bytes content = 2;
+  string file_name = 1 [(validate.rules).string = {min_len: 1, max_len: 255}];
+  bytes content = 2 [(validate.rules).bytes = {min_len: 1}];
 }
 
 message UploadCSVResponse {
@@ -53,7 +54,7 @@ message UploadCSVResponse {
 }
 
 message GetFileRequest {
-  int64 file_id = 1;
+  int64 file_id = 1 [(validate.rules).int64 = {gt: 0}];
 }
 
 message FileMetadataResponse {
@@ -61,13 +62,13 @@ message FileMetadataResponse {
 }
 
 message UpdateCSVFileRequest {
-  int64 file_id = 1;
-  string file_name = 2;
-  bytes new_content = 3;
+  int64 file_id = 1 [(validate.rules).int64 = {gt: 0}];
+  string file_name = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
+  bytes new_content = 3 [(validate.rules).bytes = {min_len: 1}];
 }
 
 message DeleteFileRequest {
-  int64 file_id = 1;
+  int64 file_id = 1 [(validate.rules).int64 = {gt: 0}];
 }
 
 message DeleteFileResponse {
@@ -76,9 +77,9 @@ message DeleteFileResponse {
 }
 
 message ListFilesRequest {
-  string status_filter = 1;
+  string status_filter = 1 [(validate.rules).string = {in: ["", "processed", "failed", "pending"]}];
   google.protobuf.Timestamp uploaded_after = 2;
-  uint64 limit = 3;
+  uint64 limit = 3 [(validate.rules).uint64 = {lte: 1000}];
   uint64 offset = 4;
 }
 

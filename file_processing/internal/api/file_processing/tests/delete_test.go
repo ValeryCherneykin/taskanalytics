@@ -83,7 +83,7 @@ func TestDeleteFile(t *testing.T) {
 					FileId: 0,
 				},
 			},
-			errContains: "file_id must be positive",
+			errContains: "value must be greater than 0", // обновлено здесь
 			serviceMockFn: func(mc *minimock.Controller) service.FileProcessingService {
 				return serviceMocks.NewFileProcessingServiceMock(mc)
 			},

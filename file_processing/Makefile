@@ -14,6 +14,8 @@ install-deps:
 	GOBIN=$(LOCAL_BIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.27.1
 	GOBIN=$(LOCAL_BIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.27.1
 	GOBIN=$(LOCAL_BIN) go install github.com/pressly/goose/v3/cmd/goose@v3.14.0
+	GOBIN=$(LOCAL_BIN) go install github.com/envoyproxy/protoc-gen-validate@v1.2.1
+
 
 get-deps:
 	go get -u google.golang.org/protobuf/cmd/protoc-gen-go
@@ -24,14 +26,15 @@ get-deps:
 generate: generate-file-processing-api
 
 generate-file-processing-api: vendor-proto
-	mkdir -p $(OUT_DIR)
-	mkdir -p docs/swagger
+	mkdir -p pkg/file_processing_v1
 	protoc \
 		--proto_path=$(PROTO_DIR) \
 		--proto_path=$(VENDOR_PROTO_DIR) \
 		--go_out=$(OUT_DIR) --go_opt=paths=source_relative \
 		--go-grpc_out=$(OUT_DIR) --go-grpc_opt=paths=source_relative \
 		--grpc-gateway_out=$(OUT_DIR) --grpc-gateway_opt=paths=source_relative \
+		--validate_out lang=go:pkg/file_processing_v1 --validate_opt=paths=source_relative \
+		--plugin=protoc-gen-validate=bin/protoc-gen-validate \
 		--openapiv2_out=docs/swagger --openapiv2_opt=allow_merge=true,merge_file_name=file_processing \
 		--plugin=protoc-gen-go=$(LOCAL_BIN)/protoc-gen-go \
 		--plugin=protoc-gen-go-grpc=$(LOCAL_BIN)/protoc-gen-go-grpc \
@@ -47,6 +50,13 @@ vendor-proto:
 		mv $(VENDOR_PROTO_DIR)/googleapis/google/api $(VENDOR_PROTO_DIR)/google &&\
 		rm -rf $(VENDOR_PROTO_DIR)/googleapis ;\
 	fi
+	@if [ ! -d vendor.protogen/validate ]; then \
+		mkdir -p vendor.protogen/validate &&\
+		git clone https://github.com/envoyproxy/protoc-gen-validate vendor.protogen/protoc-gen-validate &&\
+		mv vendor.protogen/protoc-gen-validate/validate/*.proto vendor.protogen/validate &&\
+		rm -rf vendor.protogen/protoc-gen-validate ;\
+	fi
+
 
 local-migration-status:
 	$(LOCAL_BIN)/goose -dir $(LOCAL_MIGRATION_DIR) postgres $(LOCAL_MIGRATION_DSN) status -v

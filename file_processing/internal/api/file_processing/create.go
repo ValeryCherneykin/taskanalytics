@@ -17,14 +17,11 @@ import (
 const maxFileSize = 10 * 1024 * 1024
 
 func (i *Implementation) UploadCSVFile(ctx context.Context, req *desc.UploadCSVFileRequest) (*desc.UploadCSVResponse, error) {
-	if req.GetFileName() == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "file name cannot be empty")
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
 	}
 
 	content := req.GetContent()
-	if len(content) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "file content cannot be empty")
-	}
 
 	if len(content) > maxFileSize {
 		return nil, status.Errorf(codes.InvalidArgument, "file size exceeds limit of %d bytes", maxFileSize)
@@ -40,14 +37,15 @@ func (i *Implementation) UploadCSVFile(ctx context.Context, req *desc.UploadCSVF
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: %v", err)
 	}
+
 	if len(records) <= 1 {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: file must contain a header and at least one data row")
+		return nil, status.Errorf(codes.InvalidArgument, "CSV must contain header and at least one row")
 	}
 
 	expectedColumns := len(records[0])
 	for i, row := range records[1:] {
 		if len(row) != expectedColumns {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid CSV format: inconsistent column count in row %d", i+2)
+			return nil, status.Errorf(codes.InvalidArgument, "inconsistent column count in row %d", i+2)
 		}
 	}
 

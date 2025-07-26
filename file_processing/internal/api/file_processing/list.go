@@ -14,6 +14,10 @@ import (
 )
 
 func (i *Implementation) ListFiles(ctx context.Context, req *desc.ListFilesRequest) (*desc.ListFilesResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+
 	files, err := i.fileProcessingService.List(ctx, req.GetLimit(), req.GetOffset())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list files: %v", err)

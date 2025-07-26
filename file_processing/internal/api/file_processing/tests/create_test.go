@@ -81,7 +81,7 @@ func TestUploadCSVFile(t *testing.T) {
 					Content:  fileBytes,
 				},
 			},
-			errContains: "file name cannot be empty",
+			errContains: "value length must be between 1 and 255 runes", // updated
 			serviceMockFn: func(mc *minimock.Controller) service.FileProcessingService {
 				return serviceMocks.NewFileProcessingServiceMock(mc)
 			},
@@ -95,7 +95,7 @@ func TestUploadCSVFile(t *testing.T) {
 					Content:  []byte{},
 				},
 			},
-			errContains: "file content cannot be empty",
+			errContains: "value length must be at least 1 bytes", // updated
 			serviceMockFn: func(mc *minimock.Controller) service.FileProcessingService {
 				return serviceMocks.NewFileProcessingServiceMock(mc)
 			},

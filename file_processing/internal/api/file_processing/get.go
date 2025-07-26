@@ -14,6 +14,10 @@ import (
 )
 
 func (i *Implementation) GetFileMetadata(ctx context.Context, req *desc.GetFileRequest) (*desc.FileMetadataResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+
 	if req.GetFileId() <= 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "file_id must be positive")
 	}
