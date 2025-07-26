@@ -38,8 +38,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER= ${GF_SECURITY_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD= ${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
     networks:
@@ -58,3 +58,16 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     networks:
       - backend
+
+  file_processing_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - pg
+    networks:
+      - backend
+    env_file:
+      - .env
+    ports:
+      - "50051:50051"  
