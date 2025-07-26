@@ -5,8 +5,27 @@ package fileprocessing_v1;
 import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/ValeryCherneykin/taskanalytics/file_processing/pkg/file_processing_v1;file_processing_v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "File Processing Service";
+    version: "1.0";
+    description: "Service for uploading, retrieving, updating and deleting CSV files.";
+    contact: {
+      name: "Valeriy Cherneykin";
+      email: "valerytcherneikin@yandex.ru";
+      url: "https://t.me/krutskyue";
+    };
+  };
+  host: "localhost:8080"
+  schemes: HTTP;
+  schemes: HTTPS;
+  consumes: "application/json";
+  produces: "application/json";
+};
 
 service FileProcessingService {
   rpc UploadCSVFile(UploadCSVFileRequest) returns (UploadCSVResponse) {

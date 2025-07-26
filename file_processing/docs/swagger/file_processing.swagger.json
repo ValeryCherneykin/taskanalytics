@@ -1,13 +1,24 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "file_processing.proto",
-    "version": "version not set"
+    "title": "File Processing Service",
+    "description": "Service for uploading, retrieving, updating and deleting CSV files.",
+    "version": "1.0",
+    "contact": {
+      "name": "Valeriy Cherneykin",
+      "url": "https://t.me/krutskyue",
+      "email": "valerytcherneikin@yandex.ru"
+    }
   },
   "tags": [
     {
       "name": "FileProcessingService"
     }
+  ],
+  "host": "localhost:8080",
+  "schemes": [
+    "http",
+    "https"
   ],
   "consumes": [
     "application/json"

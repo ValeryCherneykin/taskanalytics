@@ -21,9 +21,10 @@ import (
 type serviceProvider struct {
 	logger *zap.Logger
 
-	pgConfig   config.PGConfig
-	grpcConfig config.GRPCConfig
-	httpConfig config.HTTPConfig
+	pgConfig      config.PGConfig
+	grpcConfig    config.GRPCConfig
+	httpConfig    config.HTTPConfig
+	swaggerConfig config.SwaggerConfig
 
 	storageConfig config.S3Config
 
@@ -88,6 +89,19 @@ func (s *serviceProvider) StorageConfig() config.S3Config {
 		s.storageConfig = cfg
 	}
 	return s.storageConfig
+}
+
+func (s *serviceProvider) SwaggerConfig() config.SwaggerConfig {
+	if s.swaggerConfig == nil {
+		cfg, err := config.NewSwaggerConfig()
+		if err != nil {
+			s.logger.Fatal("failed to get swagger config: %s", zap.Error(err))
+		}
+
+		s.swaggerConfig = cfg
+	}
+
+	return s.swaggerConfig
 }
 
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
