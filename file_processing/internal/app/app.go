@@ -29,11 +29,12 @@ import (
 )
 
 type App struct {
-	serviceProvider *serviceProvider
-	grpcServer      *grpc.Server
-	logger          *zap.Logger
-	httpServer      *http.Server
-	swaggerServer   *http.Server
+	serviceProvider  *serviceProvider
+	grpcServer       *grpc.Server
+	logger           *zap.Logger
+	httpServer       *http.Server
+	swaggerServer    *http.Server
+	prometheusServer *http.Server
 }
 
 func NewApp(ctx context.Context) (*App, error) {
@@ -60,7 +61,7 @@ func (a *App) Run() error {
 	}()
 
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 
 	go func() {
 		defer wg.Done()
@@ -88,6 +89,15 @@ func (a *App) Run() error {
 		}
 	}()
 
+	go func() {
+		defer wg.Done()
+
+		err := a.runPrometheusServer()
+		if err != nil {
+			a.logger.Error("failed to run Prometheus server", zap.Error(err))
+		}
+	}()
+
 	wg.Wait()
 
 	return nil
@@ -100,6 +110,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initHTTPServer,
 		a.initSwaggerServer,
 		a.initGRPCServer,
+		a.initPrometheusServer,
 
 		func(ctx context.Context) error {
 			return metric.Init(ctx)
@@ -238,6 +249,31 @@ func (a *App) initSwaggerServer(_ context.Context) error {
 		Handler: mux,
 	}
 
+	return nil
+}
+
+func (a *App) initPrometheusServer(_ context.Context) error {
+	promCfg := a.serviceProvider.PrometheusConfig()
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	a.prometheusServer = &http.Server{
+		Addr:    promCfg.Address(),
+		Handler: mux,
+	}
+
+	a.logger.Info("Prometheus server initialized", zap.String("address", promCfg.Address()))
+	return nil
+}
+
+func (a *App) runPrometheusServer() error {
+	a.logger.Info("Prometheus server starting...", zap.String("address", a.prometheusServer.Addr))
+	err := a.prometheusServer.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		a.logger.Error("Prometheus server failed", zap.Error(err))
+		return err
+	}
 	return nil
 }
 
