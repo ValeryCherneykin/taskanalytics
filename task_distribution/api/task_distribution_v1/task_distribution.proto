@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package task.v1;
+
+option go_package = "github.com/ValeryCherneykin/taskanalytics/task_distribution/pkg/task_distribution_v1;task_distribution_v1";
+
+import "google/protobuf/timestamp.proto";
+
+service TaskService {
+
+  rpc SubmitFileProcessingTask(SubmitFileProcessingTaskRequest) returns (SubmitFileProcessingTaskResponse);
+
+  rpc GetTaskStatus(GetTaskStatusRequest) returns (GetTaskStatusResponse);
+}
+
+message SubmitFileProcessingTaskRequest {
+  int64 file_id = 1;
+  string file_path = 2;
+  string file_name = 3;
+  google.protobuf.Timestamp uploaded_at = 4;
+  int64 record_count = 5;
+}
+
+message GetTaskStatusRequest {
+  string task_id = 1;
+}
+
+message SubmitFileProcessingTaskResponse {
+  string task_id = 1;
+  string status = 2; 
+}
+
+message GetTaskStatusResponse {
+  string task_id = 1;
+  TaskStatus status = 2;
+  string message = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_QUEUED      = 1;
+  TASK_STATUS_IN_PROGRESS = 2;
+  TASK_STATUS_COMPLETED   = 3;
+  TASK_STATUS_FAILED      = 4;
+}

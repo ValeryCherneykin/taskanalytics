@@ -7,3 +7,6 @@ uploads/
 test_data/
 /file_processing/vendor.protogen
 
+/task_distribution/bin
+
+
