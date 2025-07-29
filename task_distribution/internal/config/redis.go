@@ -17,6 +17,13 @@ const (
 	redisIdleTimeoutEnvName       = "REDIS_IDLE_TIMEOUT_SEC"
 )
 
+type RedisConfig interface {
+	Address() string
+	ConnectionTimeout() time.Duration
+	MaxIdle() int
+	IdleTimeout() time.Duration
+}
+
 type redisConfig struct {
 	host string
 	port string

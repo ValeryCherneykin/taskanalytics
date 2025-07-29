@@ -36,7 +36,7 @@ func NewTaskServiceClient(cc grpc.ClientConnInterface) TaskServiceClient {
 
 func (c *taskServiceClient) SubmitFileProcessingTask(ctx context.Context, in *SubmitFileProcessingTaskRequest, opts ...grpc.CallOption) (*SubmitFileProcessingTaskResponse, error) {
 	out := new(SubmitFileProcessingTaskResponse)
-	err := c.cc.Invoke(ctx, "/task.v1.TaskService/SubmitFileProcessingTask", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/taskdistribution.v1.TaskService/SubmitFileProcessingTask", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (c *taskServiceClient) SubmitFileProcessingTask(ctx context.Context, in *Su
 
 func (c *taskServiceClient) GetTaskStatus(ctx context.Context, in *GetTaskStatusRequest, opts ...grpc.CallOption) (*GetTaskStatusResponse, error) {
 	out := new(GetTaskStatusResponse)
-	err := c.cc.Invoke(ctx, "/task.v1.TaskService/GetTaskStatus", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/taskdistribution.v1.TaskService/GetTaskStatus", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func _TaskService_SubmitFileProcessingTask_Handler(srv interface{}, ctx context.
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/task.v1.TaskService/SubmitFileProcessingTask",
+		FullMethod: "/taskdistribution.v1.TaskService/SubmitFileProcessingTask",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TaskServiceServer).SubmitFileProcessingTask(ctx, req.(*SubmitFileProcessingTaskRequest))
@@ -112,7 +112,7 @@ func _TaskService_GetTaskStatus_Handler(srv interface{}, ctx context.Context, de
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/task.v1.TaskService/GetTaskStatus",
+		FullMethod: "/taskdistribution.v1.TaskService/GetTaskStatus",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TaskServiceServer).GetTaskStatus(ctx, req.(*GetTaskStatusRequest))
@@ -124,7 +124,7 @@ func _TaskService_GetTaskStatus_Handler(srv interface{}, ctx context.Context, de
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var TaskService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "task.v1.TaskService",
+	ServiceName: "taskdistribution.v1.TaskService",
 	HandlerType: (*TaskServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

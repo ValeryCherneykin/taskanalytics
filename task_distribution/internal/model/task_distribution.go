@@ -5,10 +5,11 @@ import "time"
 type TaskStatus string
 
 const (
-	TaskStatusQueued     TaskStatus = "QUEUED"
-	TaskStatusInProgress TaskStatus = "IN_PROGRESS"
-	TaskStatusCompleted  TaskStatus = "COMPLETED"
-	TaskStatusFailed     TaskStatus = "FAILED"
+	TaskStatusUnspecified TaskStatus = "UNSPECIFIED"
+	TaskStatusQueued      TaskStatus = "QUEUED"
+	TaskStatusInProgress  TaskStatus = "IN_PROGRESS"
+	TaskStatusCompleted   TaskStatus = "COMPLETED"
+	TaskStatusFailed      TaskStatus = "FAILED"
 )
 
 type Task struct {
@@ -18,6 +19,7 @@ type Task struct {
 	FileName    string     `json:"file_name"`
 	RecordCount int64      `json:"record_count"`
 	Status      TaskStatus `json:"status"`
-	CreatedAt   time.Time  `json:"created_at"`
+	UploadedAt  time.Time  `json:"uploaded_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+	Message     string     `json:"message"`
 }
