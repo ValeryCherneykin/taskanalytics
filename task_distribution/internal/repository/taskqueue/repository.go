@@ -28,6 +28,10 @@ func (r *repo) Enqueue(ctx context.Context, task *model.Task) error {
 		return err
 	}
 
+	if err := r.redis.Set(ctx, "task:"+task.TaskID, data); err != nil {
+		return err
+	}
+
 	return r.redis.LPush(ctx, queueName, data)
 }
 
@@ -38,6 +42,25 @@ func (r *repo) Dequeue(ctx context.Context, timeout time.Duration) (*model.Task,
 	}
 	if raw == nil {
 		return nil, nil
+	}
+
+	bytes, ok := raw.([]byte)
+	if !ok {
+		return nil, ErrInvalidTaskFormat
+	}
+
+	var task model.Task
+	if err := json.Unmarshal(bytes, &task); err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
+func (r *repo) GetTaskByID(ctx context.Context, taskID string) (*model.Task, error) {
+	raw, err := r.redis.Get(ctx, "task:"+taskID)
+	if err != nil || raw == nil {
+		return nil, err
 	}
 
 	bytes, ok := raw.([]byte)
