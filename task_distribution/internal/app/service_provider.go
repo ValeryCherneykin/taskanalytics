@@ -93,10 +93,10 @@ func (s *serviceProvider) QueueService(ctx context.Context) service.QueueService
 	return s.queueService
 }
 
-func (s *serviceProvider) QueueImpl(ctx context.Context) taskqueue.Implementation {
+func (s *serviceProvider) QueueImpl(ctx context.Context) *taskqueue.Implementation {
 	if s.taskQueue == nil {
 		s.taskQueue = taskqueue.NewImplementation(s.QueueService(ctx))
 	}
 
-	return *s.taskQueue
+	return s.taskQueue
 }
