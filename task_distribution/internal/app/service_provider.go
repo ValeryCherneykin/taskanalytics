@@ -4,7 +4,10 @@ import (
 	"context"
 	"log"
 
+	"github.com/IBM/sarama"
 	"github.com/ValeryCherneykin/taskanalytics/task_distribution/internal/api/taskqueue"
+	"github.com/ValeryCherneykin/taskanalytics/task_distribution/internal/client/kafka"
+	producerPkg "github.com/ValeryCherneykin/taskanalytics/task_distribution/internal/client/kafka/producer"
 	"github.com/ValeryCherneykin/taskanalytics/task_distribution/internal/client/taskstate"
 	"github.com/ValeryCherneykin/taskanalytics/task_distribution/internal/client/taskstate/redis"
 	"github.com/ValeryCherneykin/taskanalytics/task_distribution/internal/config"
@@ -18,6 +21,7 @@ import (
 type serviceProvider struct {
 	redisConfig config.RedisConfig
 	grpcConfig  config.GRPCConfig
+	kafkaConfig config.KafkaProducerConfig
 
 	redisPool   *redigo.Pool
 	redisClient taskstate.RedisClient
@@ -27,6 +31,8 @@ type serviceProvider struct {
 	queueService service.QueueService
 
 	taskQueue *taskqueue.Implementation
+
+	kafkaProducer kafka.Producer
 }
 
 func newServiceProvider() *serviceProvider {
@@ -55,6 +61,17 @@ func (s *serviceProvider) GRPCConfig() config.GRPCConfig {
 		s.grpcConfig = cfg
 	}
 	return s.grpcConfig
+}
+
+func (s *serviceProvider) KafkaConfig() config.KafkaProducerConfig {
+	if s.kafkaConfig == nil {
+		cfg, err := config.NewKafkaProducerConfig()
+		if err != nil {
+			log.Fatalf("failed to get kafka config: %s", err.Error())
+		}
+		s.kafkaConfig = cfg
+	}
+	return s.kafkaConfig
 }
 
 func (s *serviceProvider) RedisPool() *redigo.Pool {
@@ -86,9 +103,24 @@ func (s *serviceProvider) TaskQueueRepo(ctx context.Context) repository.TaskQueu
 	return s.taskQueueRepo
 }
 
+func (s *serviceProvider) KafkaProducer() kafka.Producer {
+	if s.kafkaProducer == nil {
+		producer, err := sarama.NewSyncProducer(
+			s.KafkaConfig().Brokers(),
+			s.KafkaConfig().Config(),
+		)
+		if err != nil {
+			log.Fatalf("failed to create kafka producer: %v", err)
+		}
+
+		s.kafkaProducer = producerPkg.NewKafkaProducer(producer)
+	}
+	return s.kafkaProducer
+}
+
 func (s *serviceProvider) QueueService(ctx context.Context) service.QueueService {
 	if s.queueService == nil {
-		s.queueService = taskstateService.NewService(s.TaskQueueRepo(ctx))
+		s.queueService = taskstateService.NewService(s.TaskQueueRepo(ctx), s.KafkaProducer())
 	}
 	return s.queueService
 }
