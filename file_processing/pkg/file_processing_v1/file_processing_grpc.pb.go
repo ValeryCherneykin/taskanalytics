@@ -27,6 +27,7 @@ type FileProcessingServiceClient interface {
 	UpdateCSVFile(ctx context.Context, in *UpdateCSVFileRequest, opts ...grpc.CallOption) (*UploadCSVResponse, error)
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
+	ProcessCSVFile(ctx context.Context, in *ProcessCSVFileRequest, opts ...grpc.CallOption) (*UploadCSVResponse, error)
 }
 
 type fileProcessingServiceClient struct {
@@ -82,6 +83,15 @@ func (c *fileProcessingServiceClient) ListFiles(ctx context.Context, in *ListFil
 	return out, nil
 }
 
+func (c *fileProcessingServiceClient) ProcessCSVFile(ctx context.Context, in *ProcessCSVFileRequest, opts ...grpc.CallOption) (*UploadCSVResponse, error) {
+	out := new(UploadCSVResponse)
+	err := c.cc.Invoke(ctx, "/fileprocessing_v1.FileProcessingService/ProcessCSVFile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FileProcessingServiceServer is the server API for FileProcessingService service.
 // All implementations must embed UnimplementedFileProcessingServiceServer
 // for forward compatibility
@@ -91,6 +101,7 @@ type FileProcessingServiceServer interface {
 	UpdateCSVFile(context.Context, *UpdateCSVFileRequest) (*UploadCSVResponse, error)
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
 	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
+	ProcessCSVFile(context.Context, *ProcessCSVFileRequest) (*UploadCSVResponse, error)
 	mustEmbedUnimplementedFileProcessingServiceServer()
 }
 
@@ -112,6 +123,9 @@ func (UnimplementedFileProcessingServiceServer) DeleteFile(context.Context, *Del
 }
 func (UnimplementedFileProcessingServiceServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListFiles not implemented")
+}
+func (UnimplementedFileProcessingServiceServer) ProcessCSVFile(context.Context, *ProcessCSVFileRequest) (*UploadCSVResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessCSVFile not implemented")
 }
 func (UnimplementedFileProcessingServiceServer) mustEmbedUnimplementedFileProcessingServiceServer() {}
 
@@ -216,6 +230,24 @@ func _FileProcessingService_ListFiles_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FileProcessingService_ProcessCSVFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessCSVFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileProcessingServiceServer).ProcessCSVFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/fileprocessing_v1.FileProcessingService/ProcessCSVFile",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileProcessingServiceServer).ProcessCSVFile(ctx, req.(*ProcessCSVFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FileProcessingService_ServiceDesc is the grpc.ServiceDesc for FileProcessingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +274,10 @@ var FileProcessingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListFiles",
 			Handler:    _FileProcessingService_ListFiles_Handler,
+		},
+		{
+			MethodName: "ProcessCSVFile",
+			Handler:    _FileProcessingService_ProcessCSVFile_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

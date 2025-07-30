@@ -78,6 +78,38 @@
         ]
       }
     },
+    "/v1/files/process": {
+      "post": {
+        "operationId": "FileProcessingService_ProcessCSVFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/fileprocessing_v1UploadCSVResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/fileprocessing_v1ProcessCSVFileRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FileProcessingService"
+        ]
+      }
+    },
     "/v1/files/upload": {
       "post": {
         "operationId": "FileProcessingService_UploadCSVFile",
@@ -279,6 +311,18 @@
             "type": "object",
             "$ref": "#/definitions/fileprocessing_v1FileMetadata"
           }
+        }
+      }
+    },
+    "fileprocessing_v1ProcessCSVFileRequest": {
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "type": "string",
+          "format": "int64"
+        },
+        "filePath": {
+          "type": "string"
         }
       }
     },

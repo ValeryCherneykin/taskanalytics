@@ -1298,3 +1298,109 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = FileMetadataValidationError{}
+
+// Validate checks the field values on ProcessCSVFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProcessCSVFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProcessCSVFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProcessCSVFileRequestMultiError, or nil if none found.
+func (m *ProcessCSVFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProcessCSVFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for FileId
+
+	// no validation rules for FilePath
+
+	if len(errors) > 0 {
+		return ProcessCSVFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProcessCSVFileRequestMultiError is an error wrapping multiple validation
+// errors returned by ProcessCSVFileRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ProcessCSVFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProcessCSVFileRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProcessCSVFileRequestMultiError) AllErrors() []error { return m }
+
+// ProcessCSVFileRequestValidationError is the validation error returned by
+// ProcessCSVFileRequest.Validate if the designated constraints aren't met.
+type ProcessCSVFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProcessCSVFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProcessCSVFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProcessCSVFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProcessCSVFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProcessCSVFileRequestValidationError) ErrorName() string {
+	return "ProcessCSVFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProcessCSVFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProcessCSVFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProcessCSVFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProcessCSVFileRequestValidationError{}

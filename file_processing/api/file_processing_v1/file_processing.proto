@@ -59,6 +59,14 @@ service FileProcessingService {
       get: "/v1/files"
     };
   }
+
+  rpc ProcessCSVFile(ProcessCSVFileRequest) returns (UploadCSVResponse) {
+    option (google.api.http) = {
+      post: "/v1/files/process"
+      body: "*"
+    };
+  }
+
 }
 
 message UploadCSVFileRequest {
@@ -114,4 +122,9 @@ message FileMetadata {
   string status = 5;
   int64 record_count = 6;
   int64 size = 7;
+}
+
+message ProcessCSVFileRequest {
+  int64 file_id = 1;
+  string file_path = 2;
 }
